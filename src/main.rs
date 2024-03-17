@@ -8,8 +8,9 @@ fn main() {
     for i in 0..100 {
         renderer.clear();
         // renderer.draw_pixel(i, i);
-        renderer.draw_line(0, 0, 100 - i, i);
+        // renderer.draw_line(100 - i, i, 0, 0);
+        renderer.draw_circle(50, 50, i);
         renderer.render();
-        sleep(time::Duration::from_millis(200));
+        sleep(time::Duration::from_millis(1000));
     }
 }

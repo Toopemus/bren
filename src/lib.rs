@@ -1,5 +1,5 @@
 pub struct Renderer {
-    pixel_buffer: Vec<Vec<bool>>,
+    pixel_grid: Vec<Vec<bool>>,
     char_buffer: Vec<char>,
     term_size: (u16, u16),
 }
@@ -11,7 +11,7 @@ impl Renderer {
         let height: usize = term_size.1.into();
 
         Self {
-            pixel_buffer: vec![vec![false; height * 6]; width * 3],
+            pixel_grid: vec![vec![false; height * 6]; width * 3],
             char_buffer: Vec::new(),
             term_size,
         }
@@ -69,7 +69,7 @@ impl Renderer {
         let x_size = self.term_size.0 as i16 * 3;
         let y_size = self.term_size.1 as i16 * 6;
         if x >= 0 && x < x_size && y >= 0 && y < y_size {
-            self.pixel_buffer[x as usize][y as usize] = true;
+            self.pixel_grid[x as usize][y as usize] = true;
         }
     }
 
@@ -105,8 +105,40 @@ impl Renderer {
         }
     }
 
+    /// Draws a line centered at (cx, cy) with a radius r.
+    /// https://www.computerenhance.com/p/efficient-dda-circle-outlines
+    pub fn draw_circle(&mut self, cx: i16, cy: i16, r: i16) {
+        let r2 = r + r;
+        let mut x = r;
+        let mut y = 0;
+        let mut dy = -2;
+        let mut dx = r2 + r2 - 4;
+        let mut d = r2 - 1;
+
+        while y <= x {
+            Self::draw_pixel(self, cy - y, cx - x);
+            Self::draw_pixel(self, cy - y, cx + x);
+            Self::draw_pixel(self, cy + y, cx - x);
+            Self::draw_pixel(self, cy + y, cx + x);
+            Self::draw_pixel(self, cy - x, cx - y);
+            Self::draw_pixel(self, cy - x, cx + y);
+            Self::draw_pixel(self, cy + x, cx - y);
+            Self::draw_pixel(self, cy + x, cx + y);
+
+            d += dy;
+            dy -= 4;
+            y += 1;
+
+            if d < 0 {
+                d += dx;
+                dx -= 4;
+                x -= 1;
+            }
+        }
+    }
+
     pub fn render(&mut self) {
-        self.char_buffer = Self::into_char_buffer(&self.pixel_buffer);
+        self.char_buffer = Self::into_char_buffer(&self.pixel_grid);
         let output = String::from_iter(&self.char_buffer);
         print!("{}", output);
     }
