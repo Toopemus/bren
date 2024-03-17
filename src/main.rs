@@ -5,10 +5,11 @@ use bren::Renderer;
 
 fn main() {
     let mut renderer = Renderer::init();
-    for i in 0..500 {
+    for i in 0..100 {
         renderer.clear();
-        renderer.draw_pixel((i, i));
+        // renderer.draw_pixel(i, i);
+        renderer.draw_line(0, 0, 100 - i, i);
         renderer.render();
-        sleep(time::Duration::from_millis(100));
+        sleep(time::Duration::from_millis(200));
     }
 }

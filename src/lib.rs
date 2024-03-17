@@ -65,11 +65,43 @@ impl Renderer {
         char_buffer
     }
 
-    pub fn draw_pixel(&mut self, (x, y): (usize, usize)) {
-        let x_size = self.term_size.0 as usize * 2;
-        let y_size = self.term_size.1 as usize * 4;
-        if x < x_size && y < y_size {
-            self.pixel_buffer[x][y] = true;
+    pub fn draw_pixel(&mut self, x: i16, y: i16) {
+        let x_size = self.term_size.0 as i16 * 3;
+        let y_size = self.term_size.1 as i16 * 6;
+        if x >= 0 && x < x_size && y >= 0 && y < y_size {
+            self.pixel_buffer[x as usize][y as usize] = true;
+        }
+    }
+
+    /// Draws a line between (x1, y1) and (x2, y2) using Bresenham's algorithm.
+    pub fn draw_line(&mut self, mut x1: i16, mut y1: i16, x2: i16, y2: i16) {
+        let dx = (x2 - x1).abs();
+        let dy = -(y2 - y1).abs();
+        let sx = if x1 < x2 { 1 } else { -1 };
+        let sy = if y1 < y2 { 1 } else { -1 };
+        let mut err = dy + dx;
+        let mut err2;
+
+        loop {
+            Self::draw_pixel(self, x1, y1);
+            if x1 == x2 && y1 == y2 {
+                break;
+            }
+            err2 = 2 * err;
+            if err2 >= dy {
+                if x1 == x2 {
+                    break;
+                }
+                err += dy;
+                x1 += sx;
+            }
+            if err2 <= dx {
+                if y1 == y2 {
+                    break;
+                }
+                err += dx;
+                y1 += sy;
+            }
         }
     }
 
