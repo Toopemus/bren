@@ -11,7 +11,7 @@ impl Renderer {
         let height: usize = term_size.1.into();
 
         Self {
-            pixel_buffer: vec![vec![false; height * 4]; width * 2],
+            pixel_buffer: vec![vec![false; height * 6]; width * 3],
             char_buffer: Vec::new(),
             term_size,
         }
@@ -43,8 +43,8 @@ impl Renderer {
     /// characters.
     fn into_char_buffer(v: &Vec<Vec<bool>>) -> Vec<char> {
         let mut char_buffer: Vec<char> = Vec::new();
-        for row in (0..v[0].len()).step_by(4) {
-            for col in (0..v.len()).step_by(2) {
+        for row in (0..v[0].len()).step_by(6) {
+            for col in (0..v.len()).step_by(3) {
                 let tile: [[bool; 4]; 2] = [
                     [
                         v[col][row],
@@ -65,7 +65,13 @@ impl Renderer {
         char_buffer
     }
 
-    pub fn draw_pixel((x, y): (u16, u16)) {}
+    pub fn draw_pixel(&mut self, (x, y): (usize, usize)) {
+        let x_size = self.term_size.0 as usize * 2;
+        let y_size = self.term_size.1 as usize * 4;
+        if x < x_size && y < y_size {
+            self.pixel_buffer[x][y] = true;
+        }
+    }
 
     pub fn render(&mut self) {
         self.char_buffer = Self::into_char_buffer(&self.pixel_buffer);
