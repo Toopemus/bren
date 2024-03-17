@@ -1,3 +1,6 @@
+const CHAR_SPACE: u16 = 0;
+const LINE_SPACE: u16 = 0;
+
 pub struct Renderer {
     pixel_grid: Vec<Vec<bool>>,
     char_buffer: Vec<char>,
@@ -7,13 +10,13 @@ pub struct Renderer {
 impl Renderer {
     pub fn init() -> Self {
         let term_size = termion::terminal_size().unwrap();
-        let width: usize = term_size.0.into();
-        let height: usize = term_size.1.into();
+        let width = term_size.0 * (2 + CHAR_SPACE);
+        let height = term_size.1 * (4 + LINE_SPACE);
 
         Self {
-            pixel_grid: vec![vec![false; height * 6]; width * 3],
+            pixel_grid: vec![vec![false; height as usize]; width as usize],
             char_buffer: Vec::new(),
-            term_size,
+            term_size: (width, height),
         }
     }
 
@@ -43,8 +46,8 @@ impl Renderer {
     /// characters.
     fn into_char_buffer(v: &Vec<Vec<bool>>) -> Vec<char> {
         let mut char_buffer: Vec<char> = Vec::new();
-        for row in (0..v[0].len()).step_by(6) {
-            for col in (0..v.len()).step_by(3) {
+        for row in (0..v[0].len()).step_by(4 + LINE_SPACE as usize) {
+            for col in (0..v.len()).step_by(2 + CHAR_SPACE as usize) {
                 let tile: [[bool; 4]; 2] = [
                     [
                         v[col][row],
@@ -66,8 +69,8 @@ impl Renderer {
     }
 
     pub fn draw_pixel(&mut self, x: i16, y: i16) {
-        let x_size = self.term_size.0 as i16 * 3;
-        let y_size = self.term_size.1 as i16 * 6;
+        let x_size = self.term_size.0 as i16;
+        let y_size = self.term_size.1 as i16;
         if x >= 0 && x < x_size && y >= 0 && y < y_size {
             self.pixel_grid[x as usize][y as usize] = true;
         }
@@ -116,14 +119,14 @@ impl Renderer {
         let mut d = r2 - 1;
 
         while y <= x {
-            Self::draw_pixel(self, cy - y, cx - x);
-            Self::draw_pixel(self, cy - y, cx + x);
-            Self::draw_pixel(self, cy + y, cx - x);
-            Self::draw_pixel(self, cy + y, cx + x);
-            Self::draw_pixel(self, cy - x, cx - y);
-            Self::draw_pixel(self, cy - x, cx + y);
-            Self::draw_pixel(self, cy + x, cx - y);
-            Self::draw_pixel(self, cy + x, cx + y);
+            Self::draw_pixel(self, cx - x, cy - y);
+            Self::draw_pixel(self, cx + x, cy - y);
+            Self::draw_pixel(self, cx - x, cy + y);
+            Self::draw_pixel(self, cx + x, cy + y);
+            Self::draw_pixel(self, cx - y, cy - x);
+            Self::draw_pixel(self, cx + y, cy - x);
+            Self::draw_pixel(self, cx - y, cy + x);
+            Self::draw_pixel(self, cx + y, cy + x);
 
             d += dy;
             dy -= 4;
@@ -143,8 +146,10 @@ impl Renderer {
         print!("{}", output);
     }
 
-    pub fn clear(&self) {
-        print!("{}", termion::clear::All);
+    pub fn clear(&mut self) {
+        let term_size = self.term_size;
+        self.pixel_grid = vec![vec![false; term_size.1 as usize]; term_size.0 as usize];
+        // print!("{}", termion::clear::All);
     }
 }
 
