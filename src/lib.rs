@@ -1,21 +1,26 @@
+use std::io::{stdout, Stdout, Write};
+
+use crossterm::{cursor, style::Print, terminal, QueueableCommand};
+
 const CHAR_SPACE: u16 = 0;
 const LINE_SPACE: u16 = 0;
 
 pub struct Renderer {
+    screen: Stdout,
     pixel_grid: Vec<Vec<bool>>,
-    char_buffer: Vec<char>,
     term_size: (u16, u16),
 }
 
 impl Renderer {
     pub fn init() -> Self {
-        let term_size = termion::terminal_size().unwrap();
-        let width = term_size.0 * (2 + CHAR_SPACE);
-        let height = term_size.1 * (4 + LINE_SPACE);
+        let screen = stdout();
+        let term_size = terminal::window_size().unwrap();
+        let width = term_size.columns * (2 + CHAR_SPACE);
+        let height = term_size.rows * (4 + LINE_SPACE);
 
         Self {
+            screen,
             pixel_grid: vec![vec![false; height as usize]; width as usize],
-            char_buffer: Vec::new(),
             term_size: (width, height),
         }
     }
@@ -44,8 +49,8 @@ impl Renderer {
 
     /// Takes a 2d vector of pixels (on/off) and transforms it into a char vector of braille
     /// characters.
-    fn into_char_buffer(v: &Vec<Vec<bool>>) -> Vec<char> {
-        let mut char_buffer: Vec<char> = Vec::new();
+    fn draw_chars(screen: &mut Stdout, v: &Vec<Vec<bool>>) {
+        screen.queue(cursor::MoveTo(0, 0)).unwrap();
         for row in (0..v[0].len()).step_by(4 + LINE_SPACE as usize) {
             for col in (0..v.len()).step_by(2 + CHAR_SPACE as usize) {
                 let tile: [[bool; 4]; 2] = [
@@ -62,10 +67,9 @@ impl Renderer {
                         v[col + 1][row + 3],
                     ],
                 ];
-                char_buffer.push(Self::into_braille(tile))
+                screen.queue(Print(Self::into_braille(tile))).unwrap();
             }
         }
-        char_buffer
     }
 
     pub fn draw_pixel(&mut self, x: i16, y: i16) {
@@ -141,15 +145,13 @@ impl Renderer {
     }
 
     pub fn render(&mut self) {
-        self.char_buffer = Self::into_char_buffer(&self.pixel_grid);
-        let output = String::from_iter(&self.char_buffer);
-        print!("{}", output);
+        Self::draw_chars(&mut self.screen, &self.pixel_grid);
+        self.screen.flush().unwrap();
     }
 
     pub fn clear(&mut self) {
         let term_size = self.term_size;
         self.pixel_grid = vec![vec![false; term_size.1 as usize]; term_size.0 as usize];
-        // print!("{}", termion::clear::All);
     }
 }
 
@@ -185,21 +187,5 @@ mod tests {
         // _ _
         let no_dots = [[false, false, false, false], [false, false, false, false]];
         assert_eq!('\u{2800}', Renderer::into_braille(no_dots));
-    }
-
-    #[test]
-    fn test_into_char_buffer() {
-        let pixel_buffer = vec![
-            vec![true, true, true, true],
-            vec![true, true, true, true],
-            vec![true, false, false, true],
-            vec![true, false, true, false],
-            vec![false, false, false, false],
-            vec![false, false, false, false],
-        ];
-        assert_eq!(
-            vec!['\u{28FF}', '\u{2869}', '\u{2800}'],
-            Renderer::into_char_buffer(&pixel_buffer)
-        )
     }
 }
