@@ -51,20 +51,20 @@ impl Renderer {
     /// characters.
     fn draw_chars(screen: &mut Stdout, v: &Vec<Vec<bool>>) {
         screen.queue(cursor::MoveTo(0, 0)).unwrap();
-        for row in (0..v[0].len()).step_by(4 + LINE_SPACE as usize) {
+        for row in (0..v[0].len()).rev().step_by(4 + LINE_SPACE as usize) {
             for col in (0..v.len()).step_by(2 + CHAR_SPACE as usize) {
                 let tile: [[bool; 4]; 2] = [
                     [
                         v[col][row],
-                        v[col][row + 1],
-                        v[col][row + 2],
-                        v[col][row + 3],
+                        v[col][row - 1],
+                        v[col][row - 2],
+                        v[col][row - 3],
                     ],
                     [
                         v[col + 1][row],
-                        v[col + 1][row + 1],
-                        v[col + 1][row + 2],
-                        v[col + 1][row + 3],
+                        v[col + 1][row - 1],
+                        v[col + 1][row - 2],
+                        v[col + 1][row - 3],
                     ],
                 ];
                 screen.queue(Print(Self::into_braille(tile))).unwrap();
