@@ -112,7 +112,7 @@ impl Renderer {
         }
     }
 
-    /// Draws a line centered at (cx, cy) with a radius r.
+    /// Draws a circle centered at (cx, cy) with a radius r.
     /// https://www.computerenhance.com/p/efficient-dda-circle-outlines
     pub fn draw_circle(&mut self, cx: i16, cy: i16, r: i16) {
         let r2 = r + r;
@@ -131,6 +131,39 @@ impl Renderer {
             Self::draw_pixel(self, cx + y, cy - x);
             Self::draw_pixel(self, cx - y, cy + x);
             Self::draw_pixel(self, cx + y, cy + x);
+
+            d += dy;
+            dy -= 4;
+            y += 1;
+
+            if d < 0 {
+                d += dx;
+                dx -= 4;
+                x -= 1;
+            }
+        }
+    }
+
+    /// Draws a filled circle centered at (cx, cy) with a radius r.
+    /// https://www.computerenhance.com/p/efficient-dda-circle-outlines
+    pub fn draw_filled_circle(&mut self, cx: i16, cy: i16, r: i16) {
+        let r2 = r + r;
+        let mut x = r;
+        let mut y = 0;
+        let mut dy = -2;
+        let mut dx = r2 + r2 - 4;
+        let mut d = r2 - 1;
+
+        while y <= x {
+            // naive solution, just draws lines from center to edge
+            Self::draw_line(self, cx - x, cy - y, cx, cy);
+            Self::draw_line(self, cx + x, cy - y, cx, cy);
+            Self::draw_line(self, cx - x, cy + y, cx, cy);
+            Self::draw_line(self, cx + x, cy + y, cx, cy);
+            Self::draw_line(self, cx - y, cy - x, cx, cy);
+            Self::draw_line(self, cx + y, cy - x, cx, cy);
+            Self::draw_line(self, cx - y, cy + x, cx, cy);
+            Self::draw_line(self, cx + y, cy + x, cx, cy);
 
             d += dy;
             dy -= 4;
