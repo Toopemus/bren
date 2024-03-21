@@ -18,13 +18,13 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn init() -> Self {
+    pub fn new() -> Renderer {
         let screen = stdout();
         let term_size = terminal::window_size().unwrap();
         let width = term_size.columns * (2 + CHAR_SPACE);
         let height = term_size.rows * (4 + LINE_SPACE);
 
-        Self {
+        Renderer {
             screen,
             pixel_grid: vec![vec![false; height as usize]; width as usize],
             text_buffer: Vec::new(),

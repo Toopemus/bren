@@ -4,6 +4,34 @@ use std::thread::sleep;
 use bren::Renderer;
 use rand::Rng;
 
+fn main() {
+    let mut renderer = Renderer::new();
+    renderer.render();
+    println!(" -+- Bren terminal drawing library -+-\n");
+    println!("     choose a demo\n");
+    println!("     1. Bouncy ball");
+    println!("     2. Spoooky bowling ball\n\n");
+    loop {
+        let mut choice = String::new();
+
+        std::io::stdin()
+            .read_line(&mut choice)
+            .expect("Failed to read line");
+
+        let choice: i32 = match choice.trim().parse() {
+            Ok(num) => num,
+            Err(_) => continue,
+        };
+
+        if choice == 1 {
+            bouncy_ball(&mut renderer);
+        }
+        if choice == 2 {
+            spooky_bowling_ball(&mut renderer);
+        }
+    }
+}
+
 fn spooky_bowling_ball(renderer: &mut Renderer) {
     let size = renderer.terminal_size();
     let w: i16 = size.0 as i16;
@@ -82,33 +110,5 @@ fn bouncy_ball(renderer: &mut Renderer) {
         renderer.write_label(1, (h - 2) as u16, "Bouncy ball B)");
         renderer.render();
         sleep(time::Duration::from_millis(50));
-    }
-}
-
-fn main() {
-    let mut renderer = Renderer::init();
-    renderer.render();
-    println!(" -+- Bren terminal drawing library -+-\n");
-    println!("     choose a demo\n");
-    println!("     1. Bouncy ball");
-    println!("     2. Spoooky bowling ball\n\n");
-    loop {
-        let mut choice = String::new();
-
-        std::io::stdin()
-            .read_line(&mut choice)
-            .expect("Failed to read line");
-
-        let choice: i32 = match choice.trim().parse() {
-            Ok(num) => num,
-            Err(_) => continue,
-        };
-
-        if choice == 1 {
-            bouncy_ball(&mut renderer);
-        }
-        if choice == 2 {
-            spooky_bowling_ball(&mut renderer);
-        }
     }
 }
