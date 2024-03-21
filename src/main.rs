@@ -50,6 +50,7 @@ fn spooky_bowling_ball(renderer: &mut Renderer) {
             rand::thread_rng().gen_range(0..w),
             rand::thread_rng().gen_range(0..h),
         );
+        renderer.write_label(1, (h - 2) as u16, "Spooky bowling ball :O");
         renderer.render();
         sleep(time::Duration::from_millis(100));
     }
@@ -78,6 +79,7 @@ fn bouncy_ball(renderer: &mut Renderer) {
         cy = cy + vy;
         renderer.clear();
         renderer.draw_filled_circle(cx, cy, r);
+        renderer.write_label(1, (h - 2) as u16, "Bouncy ball B)");
         renderer.render();
         sleep(time::Duration::from_millis(50));
     }

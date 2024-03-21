@@ -5,9 +5,15 @@ use crossterm::{cursor, style::Print, terminal, QueueableCommand};
 const CHAR_SPACE: u16 = 0;
 const LINE_SPACE: u16 = 0;
 
+struct TextLabel {
+    message: String,
+    position: (u16, u16),
+}
+
 pub struct Renderer {
     screen: Stdout,
     pixel_grid: Vec<Vec<bool>>,
+    text_buffer: Vec<TextLabel>,
     term_size: (u16, u16),
 }
 
@@ -21,6 +27,7 @@ impl Renderer {
         Self {
             screen,
             pixel_grid: vec![vec![false; height as usize]; width as usize],
+            text_buffer: Vec::new(),
             term_size: (width, height),
         }
     }
@@ -70,6 +77,14 @@ impl Renderer {
                 screen.queue(Print(Self::into_braille(tile))).unwrap();
             }
         }
+    }
+
+    pub fn write_label(&mut self, row: u16, col: u16, message: &str) {
+        let label = TextLabel {
+            message: String::from(message),
+            position: (row, col),
+        };
+        self.text_buffer.push(label);
     }
 
     pub fn draw_pixel(&mut self, x: i16, y: i16) {
@@ -177,14 +192,27 @@ impl Renderer {
         }
     }
 
+    fn draw_text_buffer(screen: &mut Stdout, text_buffer: &Vec<TextLabel>) {
+        for label in text_buffer {
+            let pos = label.position;
+            screen
+                .queue(cursor::MoveTo(pos.0, pos.1))
+                .unwrap()
+                .queue(Print(&label.message))
+                .unwrap();
+        }
+    }
+
     pub fn render(&mut self) {
         Self::draw_chars(&mut self.screen, &self.pixel_grid);
+        Self::draw_text_buffer(&mut self.screen, &self.text_buffer);
         self.screen.flush().unwrap();
     }
 
     pub fn clear(&mut self) {
         let term_size = self.term_size;
         self.pixel_grid = vec![vec![false; term_size.1 as usize]; term_size.0 as usize];
+        self.text_buffer = Vec::new();
     }
 }
 
