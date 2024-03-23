@@ -1,14 +1,21 @@
-use std::io::{stdout, Stdout, Write};
+use std::{
+    error::Error,
+    fs,
+    io::{stdout, Stdout, Write},
+};
 
 use crossterm::{cursor, style::Print, terminal, QueueableCommand};
 
 const CHAR_SPACE: u16 = 0;
 const LINE_SPACE: u16 = 0;
 
-pub struct Vertex {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+#[derive(Debug)]
+struct Vertex {
+    position: (f32, f32, f32),
+}
+
+struct Triangle {
+    indexes: (usize, usize, usize),
 }
 
 pub struct Renderer {
@@ -16,7 +23,7 @@ pub struct Renderer {
     pixel_grid: Vec<Vec<bool>>,
     term_size: (u16, u16),
     vertex_buffer: Vec<Vertex>,
-    index_buffer: Vec<usize>,
+    index_buffer: Vec<Triangle>,
 }
 
 impl Renderer {
@@ -35,25 +42,136 @@ impl Renderer {
         }
     }
 
+    pub fn load_object(&mut self, filename: &str) -> Result<(), Box<dyn Error>> {
+        let obj_file = fs::read_to_string(filename)?;
+
+        for line in obj_file.lines() {
+            let values: Vec<&str> = line.split_whitespace().collect();
+            if values.len() == 0 {
+                continue;
+            }
+            if values[0] == "v" {
+                // vertex data
+                let vertex = Vertex {
+                    position: (values[1].parse()?, values[2].parse()?, values[3].parse()?),
+                };
+                self.vertex_buffer.push(vertex);
+            } else if values[0] == "f" {
+                // index data
+                let triangle = Triangle {
+                    indexes: (values[1].parse()?, values[2].parse()?, values[3].parse()?),
+                };
+                self.index_buffer.push(triangle);
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn transform(&mut self, x: i16, y: i16, z: i16) {
+        for vertex in &mut self.vertex_buffer {
+            vertex.position.0 += x as f32;
+            vertex.position.1 += y as f32;
+            vertex.position.2 += z as f32;
+        }
+    }
+
+    pub fn scale(&mut self, x: i16, y: i16, z: i16) {
+        for vertex in &mut self.vertex_buffer {
+            vertex.position.0 *= x as f32;
+            vertex.position.1 *= y as f32;
+            vertex.position.2 *= z as f32;
+        }
+    }
+
+    pub fn rotate(&mut self, x: f32, y: f32, z: f32) {
+        for vertex in &mut self.vertex_buffer {
+            // around x axis
+            vertex.position.1 =
+                x.to_radians().cos() * vertex.position.1 - x.to_radians().sin() * vertex.position.2;
+            vertex.position.2 =
+                x.to_radians().sin() * vertex.position.1 + x.to_radians().cos() * vertex.position.2;
+            // around y axis
+            vertex.position.0 =
+                y.to_radians().cos() * vertex.position.0 + y.to_radians().sin() * vertex.position.2;
+            vertex.position.2 = (-1.0 * y.to_radians().sin()) * vertex.position.0
+                + y.to_radians().cos() * vertex.position.2;
+            // around z axis
+            vertex.position.0 =
+                z.to_radians().cos() * vertex.position.0 - z.to_radians().sin() * vertex.position.1;
+            vertex.position.1 =
+                z.to_radians().sin() * vertex.position.0 + z.to_radians().cos() * vertex.position.1;
+        }
+    }
+
     pub fn terminal_size(&self) -> (u16, u16) {
         self.term_size
     }
 
-    /// Temporary setters
-    pub fn set_vertex_buffer(&mut self, v: &mut Vec<Vertex>) {
-        self.vertex_buffer.append(v);
-    }
-
-    /// Temporary setters
-    pub fn set_index_buffer(&mut self, v: &mut Vec<usize>) {
-        self.index_buffer.append(v);
-    }
-
     pub fn draw(&mut self) {
-        for i in (0..self.index_buffer.len()).step_by(3) {
-            Self::draw_line(self, self.index_buffer[i], self.index_buffer[i + 1]);
-            Self::draw_line(self, self.index_buffer[i + 1], self.index_buffer[i + 2]);
-            Self::draw_line(self, self.index_buffer[i + 2], self.index_buffer[i]);
+        for i in 0..self.index_buffer.len() {
+            Self::draw_line(
+                self,
+                self.index_buffer[i].indexes.0 - 1,
+                self.index_buffer[i].indexes.1 - 1,
+            );
+            Self::draw_line(
+                self,
+                self.index_buffer[i].indexes.1 - 1,
+                self.index_buffer[i].indexes.2 - 1,
+            );
+            Self::draw_line(
+                self,
+                self.index_buffer[i].indexes.2 - 1,
+                self.index_buffer[i].indexes.0 - 1,
+            );
+        }
+    }
+
+    pub fn draw_pixel(&mut self, x: i16, y: i16) {
+        let x_size = self.term_size.0 as i16;
+        let y_size = self.term_size.1 as i16;
+        if x >= 0 && x < x_size && y >= 0 && y < y_size {
+            self.pixel_grid[x as usize][y as usize] = true;
+        }
+    }
+
+    pub fn draw_line(&mut self, i1: usize, i2: usize) {
+        let v1 = &self.vertex_buffer[i1];
+        let v2 = &self.vertex_buffer[i2];
+        let mut x1 = v1.position.0 as i16;
+        let mut y1 = v1.position.1 as i16;
+        let x2 = v2.position.0 as i16;
+        let y2 = v2.position.1 as i16;
+        let dx = (x2 - x1).abs();
+        let dy = -(y2 - y1).abs();
+        let sx = if x1 < x2 { 1 } else { -1 };
+        let sy = if y1 < y2 { 1 } else { -1 };
+        let mut err = dy + dx;
+        let mut err2;
+
+        loop {
+            // casting f32 as i16, could lead to unexpected values. Then again, such values won't
+            // fit the screen
+            Self::draw_pixel(self, x1, y1);
+            if x1 == x2 && y1 == y2 {
+                break;
+            }
+            err2 = 2 * err;
+            if err2 >= dy {
+                if x1 == x2 {
+                    break;
+                }
+                err += dy;
+                x1 += sx;
+            }
+            if err2 <= dx {
+                if y1 == y2 {
+                    break;
+                }
+                err += dx;
+                y1 += sy;
+            }
         }
     }
 
@@ -96,53 +214,6 @@ impl Renderer {
                     ],
                 ];
                 screen.queue(Print(Self::into_braille(tile))).unwrap();
-            }
-        }
-    }
-
-    pub fn draw_pixel(&mut self, x: i16, y: i16) {
-        let x_size = self.term_size.0 as i16;
-        let y_size = self.term_size.1 as i16;
-        if x >= 0 && x < x_size && y >= 0 && y < y_size {
-            self.pixel_grid[x as usize][y as usize] = true;
-        }
-    }
-
-    pub fn draw_line(&mut self, i1: usize, i2: usize) {
-        let v1 = &self.vertex_buffer[i1];
-        let v2 = &self.vertex_buffer[i2];
-        let mut x1 = v1.x;
-        let mut y1 = v1.y;
-        let x2 = v2.x;
-        let y2 = v2.y;
-        let dx = (x2 - x1).abs();
-        let dy = -(y2 - y1).abs();
-        let sx = if x1 < x2 { 1.0 } else { -1.0 };
-        let sy = if y1 < y2 { 1.0 } else { -1.0 };
-        let mut err = dy + dx;
-        let mut err2;
-
-        loop {
-            // casting f32 as i16, could lead to unexpected values. Then again, such values won't
-            // fit the screen
-            Self::draw_pixel(self, x1 as i16, y1 as i16);
-            if x1 == x2 && y1 == y2 {
-                break;
-            }
-            err2 = 2.0 * err;
-            if err2 >= dy {
-                if x1 == x2 {
-                    break;
-                }
-                err += dy;
-                x1 += sx;
-            }
-            if err2 <= dx {
-                if y1 == y2 {
-                    break;
-                }
-                err += dx;
-                y1 += sy;
             }
         }
     }
