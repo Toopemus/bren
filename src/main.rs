@@ -41,20 +41,20 @@ fn three_dee(renderer: &mut renderer3d::Renderer) {
     let w = size.0 as f32;
     let h = size.1 as f32;
     let mut teapot = Object::load_from_file("teapot.obj").unwrap();
-    teapot.rotate(10.0, 0.0, 0.0);
-    teapot.scale(70.0, 70.0, 70.0);
-    teapot.transform(w / 2.0, h / 3.0, 0.0);
+    teapot.scale(50.0, 50.0, 50.0);
+    teapot.translate(w / 2.0, h / 5.0, 0.0);
     renderer.clear();
     renderer.draw_object(&teapot);
     renderer.render();
+
+    let mut i = 0.0;
     loop {
-        teapot.transform(-1.0 * (w / 2.0), -1.0 * (h / 3.0), 0.0);
-        teapot.rotate(0.0, 2.0, 0.0);
-        teapot.transform(w / 2.0, h / 3.0, 0.0);
+        i = if i < 359.0 { i + 1.0 } else { 0.0 };
+        teapot.rotate(10.0, i, 0.0);
         renderer.clear();
         renderer.draw_object(&teapot);
         renderer.render();
-        sleep(time::Duration::from_millis(100));
+        sleep(time::Duration::from_millis(1000 / 30));
     }
 }
 

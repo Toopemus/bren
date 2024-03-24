@@ -11,19 +11,29 @@ struct Vertex {
 }
 
 impl Vertex {
-    fn transform(&mut self, x: f32, y: f32, z: f32) {
+    fn get_transformed(&self, transform: &Transform) -> Vertex {
+        let mut transformed_vertex = Vertex {
+            position: (self.position.0, self.position.1, self.position.2),
+        };
+        transformed_vertex.rotate(transform.rotation);
+        transformed_vertex.scale(transform.scale);
+        transformed_vertex.translate(transform.position);
+
+        transformed_vertex
+    }
+    fn translate(&mut self, (x, y, z): (f32, f32, f32)) {
         self.position.0 += x;
         self.position.1 += y;
         self.position.2 += z;
     }
 
-    fn scale(&mut self, x: f32, y: f32, z: f32) {
+    fn scale(&mut self, (x, y, z): (f32, f32, f32)) {
         self.position.0 *= x;
         self.position.1 *= y;
         self.position.2 *= z;
     }
 
-    fn rotate(&mut self, x: f32, y: f32, z: f32) {
+    fn rotate(&mut self, (x, y, z): (f32, f32, f32)) {
         // around x axis
         self.position.1 =
             x.to_radians().cos() * self.position.1 - x.to_radians().sin() * self.position.2;
@@ -46,9 +56,26 @@ struct Triangle {
     indexes: (usize, usize, usize),
 }
 
+struct Transform {
+    position: (f32, f32, f32),
+    scale: (f32, f32, f32),
+    rotation: (f32, f32, f32),
+}
+
+impl Transform {
+    fn new() -> Transform {
+        Transform {
+            position: (0.0, 0.0, 0.0),
+            scale: (1.0, 1.0, 1.0),
+            rotation: (0.0, 0.0, 0.0),
+        }
+    }
+}
+
 pub struct Object {
     vertex_buffer: Vec<Vertex>,
     index_buffer: Vec<Triangle>,
+    transform: Transform,
 }
 
 impl Object {
@@ -80,29 +107,26 @@ impl Object {
         Ok(Object {
             vertex_buffer,
             index_buffer,
+            transform: Transform::new(),
         })
     }
 
-    fn vertex_at(&self, index: usize) -> &Vertex {
-        &self.vertex_buffer[index]
+    fn transform_and_get_vertex_at(&self, index: usize) -> Vertex {
+        let transformed_vertex = self.vertex_buffer[index].get_transformed(&self.transform);
+
+        transformed_vertex
     }
 
-    pub fn transform(&mut self, x: f32, y: f32, z: f32) {
-        for vertex in &mut self.vertex_buffer {
-            vertex.transform(x, y, z);
-        }
+    pub fn translate(&mut self, x: f32, y: f32, z: f32) {
+        self.transform.position = (x, y, z);
     }
 
     pub fn scale(&mut self, x: f32, y: f32, z: f32) {
-        for vertex in &mut self.vertex_buffer {
-            vertex.scale(x, y, z);
-        }
+        self.transform.scale = (x, y, z);
     }
 
     pub fn rotate(&mut self, x: f32, y: f32, z: f32) {
-        for vertex in &mut self.vertex_buffer {
-            vertex.rotate(x, y, z);
-        }
+        self.transform.rotation = (x, y, z);
     }
 }
 
@@ -132,21 +156,12 @@ impl Renderer {
 
     pub fn draw_object(&mut self, object: &Object) {
         for triangle in &object.index_buffer {
-            Self::draw_line(
-                self,
-                object.vertex_at(triangle.indexes.0 - 1),
-                object.vertex_at(triangle.indexes.1 - 1),
-            );
-            Self::draw_line(
-                self,
-                object.vertex_at(triangle.indexes.1 - 1),
-                object.vertex_at(triangle.indexes.2 - 1),
-            );
-            Self::draw_line(
-                self,
-                object.vertex_at(triangle.indexes.2 - 1),
-                object.vertex_at(triangle.indexes.0 - 1),
-            );
+            let v0 = object.transform_and_get_vertex_at(triangle.indexes.0 - 1);
+            let v1 = object.transform_and_get_vertex_at(triangle.indexes.1 - 1);
+            let v2 = object.transform_and_get_vertex_at(triangle.indexes.2 - 1);
+            Self::draw_line(self, &v0, &v1);
+            Self::draw_line(self, &v1, &v2);
+            Self::draw_line(self, &v2, &v0);
         }
     }
 
