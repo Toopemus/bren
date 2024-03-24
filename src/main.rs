@@ -3,6 +3,7 @@ use std::thread::sleep;
 
 use bren::renderer2d;
 use bren::renderer3d;
+use bren::renderer3d::Object;
 use rand::Rng;
 
 fn main() {
@@ -37,21 +38,21 @@ fn main() {
 
 fn three_dee(renderer: &mut renderer3d::Renderer) {
     let size = renderer.terminal_size();
-    let w: i16 = size.0 as i16;
-    let h: i16 = size.1 as i16;
-    let _ = renderer.load_object("teapot.obj");
-    renderer.rotate(10.0, 0.0, 0.0);
-    renderer.scale(70, 70, 70);
-    renderer.transform(w / 2, h / 3, 0);
+    let w = size.0 as f32;
+    let h = size.1 as f32;
+    let mut teapot = Object::load_from_file("teapot.obj").unwrap();
+    teapot.rotate(10.0, 0.0, 0.0);
+    teapot.scale(70.0, 70.0, 70.0);
+    teapot.transform(w / 2.0, h / 3.0, 0.0);
     renderer.clear();
-    renderer.draw();
+    renderer.draw_object(&teapot);
     renderer.render();
     loop {
-        renderer.transform(-1 * (w / 2), -1 * (h / 3), 0);
-        renderer.rotate(0.0, 2.0, 0.0);
-        renderer.transform(w / 2, h / 3, 0);
+        teapot.transform(-1.0 * (w / 2.0), -1.0 * (h / 3.0), 0.0);
+        teapot.rotate(0.0, 2.0, 0.0);
+        teapot.transform(w / 2.0, h / 3.0, 0.0);
         renderer.clear();
-        renderer.draw();
+        renderer.draw_object(&teapot);
         renderer.render();
         sleep(time::Duration::from_millis(100));
     }

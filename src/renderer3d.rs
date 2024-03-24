@@ -6,21 +6,110 @@ use std::{
 
 use crossterm::{cursor, style::Print, terminal, QueueableCommand};
 
-#[derive(Debug)]
 struct Vertex {
     position: (f32, f32, f32),
+}
+
+impl Vertex {
+    fn transform(&mut self, x: f32, y: f32, z: f32) {
+        self.position.0 += x;
+        self.position.1 += y;
+        self.position.2 += z;
+    }
+
+    fn scale(&mut self, x: f32, y: f32, z: f32) {
+        self.position.0 *= x;
+        self.position.1 *= y;
+        self.position.2 *= z;
+    }
+
+    fn rotate(&mut self, x: f32, y: f32, z: f32) {
+        // around x axis
+        self.position.1 =
+            x.to_radians().cos() * self.position.1 - x.to_radians().sin() * self.position.2;
+        self.position.2 =
+            x.to_radians().sin() * self.position.1 + x.to_radians().cos() * self.position.2;
+        // around y axis
+        self.position.0 =
+            y.to_radians().cos() * self.position.0 + y.to_radians().sin() * self.position.2;
+        self.position.2 = (-1.0 * y.to_radians().sin()) * self.position.0
+            + y.to_radians().cos() * self.position.2;
+        // around z axis
+        self.position.0 =
+            z.to_radians().cos() * self.position.0 - z.to_radians().sin() * self.position.1;
+        self.position.1 =
+            z.to_radians().sin() * self.position.0 + z.to_radians().cos() * self.position.1;
+    }
 }
 
 struct Triangle {
     indexes: (usize, usize, usize),
 }
 
+pub struct Object {
+    vertex_buffer: Vec<Vertex>,
+    index_buffer: Vec<Triangle>,
+}
+
+impl Object {
+    pub fn load_from_file(filename: &str) -> Result<Object, Box<dyn Error>> {
+        let mut vertex_buffer: Vec<Vertex> = vec![];
+        let mut index_buffer: Vec<Triangle> = vec![];
+        let obj_file = fs::read_to_string(filename)?;
+
+        for line in obj_file.lines() {
+            let values: Vec<&str> = line.split_whitespace().collect();
+            if values.len() == 0 {
+                continue;
+            }
+            if values[0] == "v" {
+                // vertex data
+                let vertex = Vertex {
+                    position: (values[1].parse()?, values[2].parse()?, values[3].parse()?),
+                };
+                vertex_buffer.push(vertex);
+            } else if values[0] == "f" {
+                // index data
+                let triangle = Triangle {
+                    indexes: (values[1].parse()?, values[2].parse()?, values[3].parse()?),
+                };
+                index_buffer.push(triangle);
+            }
+        }
+
+        Ok(Object {
+            vertex_buffer,
+            index_buffer,
+        })
+    }
+
+    fn vertex_at(&self, index: usize) -> &Vertex {
+        &self.vertex_buffer[index]
+    }
+
+    pub fn transform(&mut self, x: f32, y: f32, z: f32) {
+        for vertex in &mut self.vertex_buffer {
+            vertex.transform(x, y, z);
+        }
+    }
+
+    pub fn scale(&mut self, x: f32, y: f32, z: f32) {
+        for vertex in &mut self.vertex_buffer {
+            vertex.scale(x, y, z);
+        }
+    }
+
+    pub fn rotate(&mut self, x: f32, y: f32, z: f32) {
+        for vertex in &mut self.vertex_buffer {
+            vertex.rotate(x, y, z);
+        }
+    }
+}
+
 pub struct Renderer {
     screen: Stdout,
     pixel_grid: Vec<Vec<bool>>,
     term_size: (u16, u16),
-    vertex_buffer: Vec<Vertex>,
-    index_buffer: Vec<Triangle>,
 }
 
 impl Renderer {
@@ -34,70 +123,6 @@ impl Renderer {
             screen,
             pixel_grid: vec![vec![false; height as usize]; width as usize],
             term_size: (width, height),
-            vertex_buffer: vec![],
-            index_buffer: vec![],
-        }
-    }
-
-    pub fn load_object(&mut self, filename: &str) -> Result<(), Box<dyn Error>> {
-        let obj_file = fs::read_to_string(filename)?;
-
-        for line in obj_file.lines() {
-            let values: Vec<&str> = line.split_whitespace().collect();
-            if values.len() == 0 {
-                continue;
-            }
-            if values[0] == "v" {
-                // vertex data
-                let vertex = Vertex {
-                    position: (values[1].parse()?, values[2].parse()?, values[3].parse()?),
-                };
-                self.vertex_buffer.push(vertex);
-            } else if values[0] == "f" {
-                // index data
-                let triangle = Triangle {
-                    indexes: (values[1].parse()?, values[2].parse()?, values[3].parse()?),
-                };
-                self.index_buffer.push(triangle);
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn transform(&mut self, x: i16, y: i16, z: i16) {
-        for vertex in &mut self.vertex_buffer {
-            vertex.position.0 += x as f32;
-            vertex.position.1 += y as f32;
-            vertex.position.2 += z as f32;
-        }
-    }
-
-    pub fn scale(&mut self, x: i16, y: i16, z: i16) {
-        for vertex in &mut self.vertex_buffer {
-            vertex.position.0 *= x as f32;
-            vertex.position.1 *= y as f32;
-            vertex.position.2 *= z as f32;
-        }
-    }
-
-    pub fn rotate(&mut self, x: f32, y: f32, z: f32) {
-        for vertex in &mut self.vertex_buffer {
-            // around x axis
-            vertex.position.1 =
-                x.to_radians().cos() * vertex.position.1 - x.to_radians().sin() * vertex.position.2;
-            vertex.position.2 =
-                x.to_radians().sin() * vertex.position.1 + x.to_radians().cos() * vertex.position.2;
-            // around y axis
-            vertex.position.0 =
-                y.to_radians().cos() * vertex.position.0 + y.to_radians().sin() * vertex.position.2;
-            vertex.position.2 = (-1.0 * y.to_radians().sin()) * vertex.position.0
-                + y.to_radians().cos() * vertex.position.2;
-            // around z axis
-            vertex.position.0 =
-                z.to_radians().cos() * vertex.position.0 - z.to_radians().sin() * vertex.position.1;
-            vertex.position.1 =
-                z.to_radians().sin() * vertex.position.0 + z.to_radians().cos() * vertex.position.1;
         }
     }
 
@@ -105,27 +130,27 @@ impl Renderer {
         self.term_size
     }
 
-    pub fn draw(&mut self) {
-        for i in 0..self.index_buffer.len() {
+    pub fn draw_object(&mut self, object: &Object) {
+        for triangle in &object.index_buffer {
             Self::draw_line(
                 self,
-                self.index_buffer[i].indexes.0 - 1,
-                self.index_buffer[i].indexes.1 - 1,
+                object.vertex_at(triangle.indexes.0 - 1),
+                object.vertex_at(triangle.indexes.1 - 1),
             );
             Self::draw_line(
                 self,
-                self.index_buffer[i].indexes.1 - 1,
-                self.index_buffer[i].indexes.2 - 1,
+                object.vertex_at(triangle.indexes.1 - 1),
+                object.vertex_at(triangle.indexes.2 - 1),
             );
             Self::draw_line(
                 self,
-                self.index_buffer[i].indexes.2 - 1,
-                self.index_buffer[i].indexes.0 - 1,
+                object.vertex_at(triangle.indexes.2 - 1),
+                object.vertex_at(triangle.indexes.0 - 1),
             );
         }
     }
 
-    pub fn draw_pixel(&mut self, x: i16, y: i16) {
+    fn draw_pixel(&mut self, x: i16, y: i16) {
         let x_size = self.term_size.0 as i16;
         let y_size = self.term_size.1 as i16;
         if x >= 0 && x < x_size && y >= 0 && y < y_size {
@@ -133,9 +158,7 @@ impl Renderer {
         }
     }
 
-    pub fn draw_line(&mut self, i1: usize, i2: usize) {
-        let v1 = &self.vertex_buffer[i1];
-        let v2 = &self.vertex_buffer[i2];
+    fn draw_line(&mut self, v1: &Vertex, v2: &Vertex) {
         let mut x1 = v1.position.0 as i16;
         let mut y1 = v1.position.1 as i16;
         let x2 = v2.position.0 as i16;
@@ -148,8 +171,6 @@ impl Renderer {
         let mut err2;
 
         loop {
-            // casting f32 as i16, could lead to unexpected values. Then again, such values won't
-            // fit the screen
             Self::draw_pixel(self, x1, y1);
             if x1 == x2 && y1 == y2 {
                 break;
