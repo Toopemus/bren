@@ -6,9 +6,6 @@ use std::{
 
 use crossterm::{cursor, style::Print, terminal, QueueableCommand};
 
-const CHAR_SPACE: u16 = 0;
-const LINE_SPACE: u16 = 0;
-
 #[derive(Debug)]
 struct Vertex {
     position: (f32, f32, f32),
@@ -30,8 +27,8 @@ impl Renderer {
     pub fn new() -> Renderer {
         let screen = stdout();
         let term_size = terminal::window_size().unwrap();
-        let width = term_size.columns * (2 + CHAR_SPACE);
-        let height = term_size.rows * (4 + LINE_SPACE);
+        let width = term_size.columns * 2;
+        let height = term_size.rows * 4;
 
         Renderer {
             screen,
@@ -197,8 +194,8 @@ impl Renderer {
     /// characters.
     fn draw_chars(screen: &mut Stdout, v: &Vec<Vec<bool>>) {
         screen.queue(cursor::MoveTo(0, 0)).unwrap();
-        for row in (0..v[0].len()).rev().step_by(4 + LINE_SPACE as usize) {
-            for col in (0..v.len()).step_by(2 + CHAR_SPACE as usize) {
+        for row in (0..v[0].len()).rev().step_by(4) {
+            for col in (0..v.len()).step_by(2) {
                 let tile: [[bool; 4]; 2] = [
                     [
                         v[col][row],
