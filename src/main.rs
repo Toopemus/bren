@@ -37,7 +37,7 @@ fn main() {
 }
 
 fn three_dee(renderer: &mut renderer3d::Renderer) {
-    let size = renderer.terminal_size();
+    let size = renderer.screen_size();
     let w = size.0 as f32;
     let h = size.1 as f32;
     let mut teapot = Object::load_from_file("teapot.obj").unwrap();

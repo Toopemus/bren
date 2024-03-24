@@ -1,10 +1,9 @@
+use crossterm::{cursor, style::Print, terminal, QueueableCommand};
 use std::{
     error::Error,
     fs,
     io::{stdout, Stdout, Write},
 };
-
-use crossterm::{cursor, style::Print, terminal, QueueableCommand};
 
 struct Vertex {
     position: (f32, f32, f32),
@@ -130,28 +129,41 @@ impl Object {
     }
 }
 
-pub struct Renderer {
-    screen: Stdout,
-    pixel_grid: Vec<Vec<bool>>,
-    term_size: (u16, u16),
+struct Screen {
+    screen_out: Stdout,
+    size: (u16, u16),
 }
 
-impl Renderer {
-    pub fn new() -> Renderer {
-        let screen = stdout();
+impl Screen {
+    fn new() -> Screen {
         let term_size = terminal::window_size().unwrap();
         let width = term_size.columns * 2;
         let height = term_size.rows * 4;
 
+        Screen {
+            screen_out: stdout(),
+            size: (width, height),
+        }
+    }
+}
+
+pub struct Renderer {
+    screen: Screen,
+    pixel_grid: Vec<Vec<bool>>,
+}
+
+impl Renderer {
+    pub fn new() -> Renderer {
+        let screen = Screen::new();
+
         Renderer {
+            pixel_grid: vec![vec![false; screen.size.1 as usize]; screen.size.0 as usize],
             screen,
-            pixel_grid: vec![vec![false; height as usize]; width as usize],
-            term_size: (width, height),
         }
     }
 
-    pub fn terminal_size(&self) -> (u16, u16) {
-        self.term_size
+    pub fn screen_size(&self) -> (u16, u16) {
+        self.screen.size
     }
 
     pub fn draw_object(&mut self, object: &Object) {
@@ -166,8 +178,8 @@ impl Renderer {
     }
 
     fn draw_pixel(&mut self, x: i16, y: i16) {
-        let x_size = self.term_size.0 as i16;
-        let y_size = self.term_size.1 as i16;
+        let x_size = self.screen.size.0 as i16;
+        let y_size = self.screen.size.1 as i16;
         if x >= 0 && x < x_size && y >= 0 && y < y_size {
             self.pixel_grid[x as usize][y as usize] = true;
         }
@@ -252,12 +264,12 @@ impl Renderer {
     }
 
     pub fn render(&mut self) {
-        Self::draw_chars(&mut self.screen, &self.pixel_grid);
-        self.screen.flush().unwrap();
+        Self::draw_chars(&mut self.screen.screen_out, &self.pixel_grid);
+        self.screen.screen_out.flush().unwrap();
     }
 
     pub fn clear(&mut self) {
-        let term_size = self.term_size;
+        let term_size = self.screen.size;
         self.pixel_grid = vec![vec![false; term_size.1 as usize]; term_size.0 as usize];
     }
 }
