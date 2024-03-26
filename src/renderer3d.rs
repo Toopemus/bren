@@ -1,5 +1,5 @@
 use crossterm::{cursor, style::Print, terminal, QueueableCommand};
-use nalgebra::Point3;
+use nalgebra::{Point3, Rotation3};
 use std::{
     error::Error,
     fs,
@@ -33,22 +33,8 @@ impl Vertex {
         self.position.z *= z;
     }
 
-    fn rotate(&mut self, (x, y, z): (f32, f32, f32)) {
-        // around x axis
-        self.position.y =
-            x.to_radians().cos() * self.position.y - x.to_radians().sin() * self.position.z;
-        self.position.z =
-            x.to_radians().sin() * self.position.y + x.to_radians().cos() * self.position.z;
-        // around y axis
-        self.position.x =
-            y.to_radians().cos() * self.position.x + y.to_radians().sin() * self.position.z;
-        self.position.z = (-1.0 * y.to_radians().sin()) * self.position.x
-            + y.to_radians().cos() * self.position.z;
-        // around z axis
-        self.position.x =
-            z.to_radians().cos() * self.position.x - z.to_radians().sin() * self.position.y;
-        self.position.y =
-            z.to_radians().sin() * self.position.x + z.to_radians().cos() * self.position.y;
+    fn rotate(&mut self, rotation: Rotation3<f32>) {
+        self.position = rotation * self.position;
     }
 }
 
@@ -59,7 +45,7 @@ struct Triangle {
 struct Transform {
     position: (f32, f32, f32),
     scale: (f32, f32, f32),
-    rotation: (f32, f32, f32),
+    rotation: Rotation3<f32>,
 }
 
 impl Transform {
@@ -67,7 +53,7 @@ impl Transform {
         Transform {
             position: (0.0, 0.0, 0.0),
             scale: (1.0, 1.0, 1.0),
-            rotation: (0.0, 0.0, 0.0),
+            rotation: Rotation3::from_euler_angles(0.0, 0.0, 0.0),
         }
     }
 }
@@ -130,7 +116,8 @@ impl Object {
     }
 
     pub fn rotate(&mut self, x: f32, y: f32, z: f32) {
-        self.transform.rotation = (x, y, z);
+        self.transform.rotation =
+            Rotation3::from_euler_angles(x.to_radians(), y.to_radians(), z.to_radians());
     }
 }
 
