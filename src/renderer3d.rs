@@ -1,5 +1,5 @@
 use crossterm::{cursor, style::Print, terminal, QueueableCommand};
-use nalgebra::Vector3;
+use nalgebra::Point3;
 use std::{
     error::Error,
     fs,
@@ -7,13 +7,13 @@ use std::{
 };
 
 struct Vertex {
-    position: Vector3<f32>,
+    position: Point3<f32>,
 }
 
 impl Vertex {
     fn get_transformed(&self, transform: &Transform) -> Vertex {
         let mut transformed_vertex = Vertex {
-            position: Vector3::new(self.position.x, self.position.y, self.position.z),
+            position: Point3::new(self.position.x, self.position.y, self.position.z),
         };
         transformed_vertex.rotate(transform.rotation);
         transformed_vertex.scale(transform.scale);
@@ -92,7 +92,7 @@ impl Object {
             if values[0] == "v" {
                 // vertex data
                 let vertex = Vertex {
-                    position: Vector3::new(
+                    position: Point3::new(
                         values[1].parse()?,
                         values[2].parse()?,
                         values[3].parse()?,
