@@ -1,4 +1,5 @@
 use crossterm::{cursor, style::Print, terminal, QueueableCommand};
+use nalgebra::Vector3;
 use std::{
     error::Error,
     fs,
@@ -6,13 +7,13 @@ use std::{
 };
 
 struct Vertex {
-    position: (f32, f32, f32),
+    position: Vector3<f32>,
 }
 
 impl Vertex {
     fn get_transformed(&self, transform: &Transform) -> Vertex {
         let mut transformed_vertex = Vertex {
-            position: (self.position.0, self.position.1, self.position.2),
+            position: Vector3::new(self.position.x, self.position.y, self.position.z),
         };
         transformed_vertex.rotate(transform.rotation);
         transformed_vertex.scale(transform.scale);
@@ -21,33 +22,33 @@ impl Vertex {
         transformed_vertex
     }
     fn translate(&mut self, (x, y, z): (f32, f32, f32)) {
-        self.position.0 += x;
-        self.position.1 += y;
-        self.position.2 += z;
+        self.position.x += x;
+        self.position.y += y;
+        self.position.z += z;
     }
 
     fn scale(&mut self, (x, y, z): (f32, f32, f32)) {
-        self.position.0 *= x;
-        self.position.1 *= y;
-        self.position.2 *= z;
+        self.position.x *= x;
+        self.position.y *= y;
+        self.position.z *= z;
     }
 
     fn rotate(&mut self, (x, y, z): (f32, f32, f32)) {
         // around x axis
-        self.position.1 =
-            x.to_radians().cos() * self.position.1 - x.to_radians().sin() * self.position.2;
-        self.position.2 =
-            x.to_radians().sin() * self.position.1 + x.to_radians().cos() * self.position.2;
+        self.position.y =
+            x.to_radians().cos() * self.position.y - x.to_radians().sin() * self.position.z;
+        self.position.z =
+            x.to_radians().sin() * self.position.y + x.to_radians().cos() * self.position.z;
         // around y axis
-        self.position.0 =
-            y.to_radians().cos() * self.position.0 + y.to_radians().sin() * self.position.2;
-        self.position.2 = (-1.0 * y.to_radians().sin()) * self.position.0
-            + y.to_radians().cos() * self.position.2;
+        self.position.x =
+            y.to_radians().cos() * self.position.x + y.to_radians().sin() * self.position.z;
+        self.position.z = (-1.0 * y.to_radians().sin()) * self.position.x
+            + y.to_radians().cos() * self.position.z;
         // around z axis
-        self.position.0 =
-            z.to_radians().cos() * self.position.0 - z.to_radians().sin() * self.position.1;
-        self.position.1 =
-            z.to_radians().sin() * self.position.0 + z.to_radians().cos() * self.position.1;
+        self.position.x =
+            z.to_radians().cos() * self.position.x - z.to_radians().sin() * self.position.y;
+        self.position.y =
+            z.to_radians().sin() * self.position.x + z.to_radians().cos() * self.position.y;
     }
 }
 
@@ -91,7 +92,11 @@ impl Object {
             if values[0] == "v" {
                 // vertex data
                 let vertex = Vertex {
-                    position: (values[1].parse()?, values[2].parse()?, values[3].parse()?),
+                    position: Vector3::new(
+                        values[1].parse()?,
+                        values[2].parse()?,
+                        values[3].parse()?,
+                    ),
                 };
                 vertex_buffer.push(vertex);
             } else if values[0] == "f" {
@@ -186,10 +191,10 @@ impl Renderer {
     }
 
     fn draw_line(&mut self, v1: &Vertex, v2: &Vertex) {
-        let mut x1 = v1.position.0 as i16;
-        let mut y1 = v1.position.1 as i16;
-        let x2 = v2.position.0 as i16;
-        let y2 = v2.position.1 as i16;
+        let mut x1 = v1.position.x as i16;
+        let mut y1 = v1.position.y as i16;
+        let x2 = v2.position.x as i16;
+        let y2 = v2.position.y as i16;
         let dx = (x2 - x1).abs();
         let dy = -(y2 - y1).abs();
         let sx = if x1 < x2 { 1 } else { -1 };
