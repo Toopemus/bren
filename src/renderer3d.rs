@@ -1,5 +1,5 @@
 use crossterm::{cursor, style::Print, terminal, QueueableCommand};
-use nalgebra::{Point3, Rotation3};
+use nalgebra::{Point3, Rotation3, Scale3, Translation3};
 use std::{
     error::Error,
     fs,
@@ -15,26 +15,28 @@ impl Vertex {
         let mut transformed_vertex = Vertex {
             position: Point3::new(self.position.x, self.position.y, self.position.z),
         };
-        transformed_vertex.rotate(transform.rotation);
-        transformed_vertex.scale(transform.scale);
-        transformed_vertex.translate(transform.position);
+        transformed_vertex.rotate(&transform);
+        transformed_vertex.scale(&transform);
+        transformed_vertex.translate(&transform);
 
         transformed_vertex
     }
-    fn translate(&mut self, (x, y, z): (f32, f32, f32)) {
-        self.position.x += x;
-        self.position.y += y;
-        self.position.z += z;
+
+    fn translate(&mut self, transform: &Transform) {
+        self.position.x += transform.position.x;
+        self.position.y += transform.position.y;
+        self.position.z += transform.position.z;
     }
 
-    fn scale(&mut self, (x, y, z): (f32, f32, f32)) {
-        self.position.x *= x;
-        self.position.y *= y;
-        self.position.z *= z;
+    fn scale(&mut self, transform: &Transform) {
+        self.position.x *= transform.scale.x;
+        self.position.y *= transform.scale.y;
+        self.position.z *= transform.scale.z;
     }
 
-    fn rotate(&mut self, rotation: Rotation3<f32>) {
-        self.position = rotation * self.position;
+    fn rotate(&mut self, transform: &Transform) {
+        // TODO: is there an unnecessary copy here?
+        self.position = transform.rotation * self.position;
     }
 }
 
@@ -43,16 +45,16 @@ struct Triangle {
 }
 
 struct Transform {
-    position: (f32, f32, f32),
-    scale: (f32, f32, f32),
+    position: Translation3<f32>,
+    scale: Scale3<f32>,
     rotation: Rotation3<f32>,
 }
 
 impl Transform {
     fn new() -> Transform {
         Transform {
-            position: (0.0, 0.0, 0.0),
-            scale: (1.0, 1.0, 1.0),
+            position: Translation3::new(0.0, 0.0, 0.0),
+            scale: Scale3::new(1.0, 1.0, 1.0),
             rotation: Rotation3::from_euler_angles(0.0, 0.0, 0.0),
         }
     }
@@ -108,11 +110,11 @@ impl Object {
     }
 
     pub fn translate(&mut self, x: f32, y: f32, z: f32) {
-        self.transform.position = (x, y, z);
+        self.transform.position = Translation3::new(x, y, z);
     }
 
     pub fn scale(&mut self, x: f32, y: f32, z: f32) {
-        self.transform.scale = (x, y, z);
+        self.transform.scale = Scale3::new(x, y, z);
     }
 
     pub fn rotate(&mut self, x: f32, y: f32, z: f32) {
