@@ -1,24 +1,24 @@
 use crossterm::{cursor, style::Print, terminal, QueueableCommand};
 use std::io::{stdout, Stdout, Write};
 
-pub struct Screen {
+pub struct Viewport {
     screen_out: Stdout,
     size: (u16, u16),
 }
 
-impl Screen {
-    pub fn new() -> Screen {
+impl Viewport {
+    pub fn new() -> Viewport {
         let term_size = terminal::window_size().unwrap();
         let width = term_size.columns * 2;
         let height = term_size.rows * 4;
 
-        Screen {
+        Viewport {
             screen_out: stdout(),
             size: (width, height),
         }
     }
 
-    pub fn get_size(&self) -> (u16, u16) {
+    pub fn size(&self) -> (u16, u16) {
         self.size
     }
 
@@ -71,7 +71,7 @@ impl Screen {
 
 #[cfg(test)]
 mod tests {
-    use super::Screen;
+    use super::Viewport;
     #[test]
     fn test_into_braille_all() {
         // o o
@@ -79,7 +79,7 @@ mod tests {
         // o o
         // o o
         let all_dots = [[true, true, true, true], [true, true, true, true]];
-        assert_eq!('\u{28FF}', Screen::into_braille(all_dots));
+        assert_eq!('\u{28FF}', Viewport::into_braille(all_dots));
     }
 
     #[test]
@@ -89,7 +89,7 @@ mod tests {
         // _ o
         // o _
         let some_dots = [[true, false, false, true], [true, false, true, false]];
-        assert_eq!('\u{2869}', Screen::into_braille(some_dots));
+        assert_eq!('\u{2869}', Viewport::into_braille(some_dots));
     }
 
     #[test]
@@ -99,6 +99,6 @@ mod tests {
         // _ _
         // _ _
         let no_dots = [[false, false, false, false], [false, false, false, false]];
-        assert_eq!('\u{2800}', Screen::into_braille(no_dots));
+        assert_eq!('\u{2800}', Viewport::into_braille(no_dots));
     }
 }

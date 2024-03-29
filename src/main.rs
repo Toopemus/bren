@@ -30,7 +30,7 @@ fn main() {
 }
 
 fn three_dee(renderer: &mut Renderer) {
-    let size = renderer.screen_size();
+    let size = renderer.viewport_size();
     let w = size.0 as f32;
     let h = size.1 as f32;
     let mut teapot = Model::load_from_file("shuttle.obj").unwrap();

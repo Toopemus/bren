@@ -1,9 +1,9 @@
 pub mod model;
-pub mod screen;
+pub mod viewport;
 
 use crate::renderer::model::{Model, Transform};
 use nalgebra::Point3;
-use screen::Screen;
+use viewport::Viewport;
 
 pub struct Vertex {
     pub(crate) position: Point3<f32>,
@@ -44,27 +44,27 @@ pub struct Triangle {
 }
 
 pub struct Renderer {
-    screen: Screen,
+    viewport: Viewport,
     pixel_grid: Vec<Vec<bool>>,
 }
 
 impl Renderer {
     pub fn new() -> Renderer {
-        let screen = Screen::new();
-        let screen_size = screen.get_size();
+        let viewport = Viewport::new();
+        let viewport_size = viewport.size();
 
         Renderer {
-            pixel_grid: vec![vec![false; screen_size.1 as usize]; screen_size.0 as usize],
-            screen,
+            pixel_grid: vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize],
+            viewport,
         }
     }
 
-    pub fn screen_size(&self) -> (u16, u16) {
-        self.screen.get_size()
+    pub fn viewport_size(&self) -> (u16, u16) {
+        self.viewport.size()
     }
 
     pub fn draw_object(&mut self, object: &Model) {
-        for triangle in object.get_index_buffer() {
+        for triangle in object.index_buffer() {
             let v0 = object.transform_and_get_vertex_at(triangle.indexes.0 - 1);
             let v1 = object.transform_and_get_vertex_at(triangle.indexes.1 - 1);
             let v2 = object.transform_and_get_vertex_at(triangle.indexes.2 - 1);
@@ -75,8 +75,8 @@ impl Renderer {
     }
 
     fn draw_pixel(&mut self, x: i16, y: i16) {
-        let x_size = self.screen.get_size().0 as i16;
-        let y_size = self.screen.get_size().1 as i16;
+        let x_size = self.viewport.size().0 as i16;
+        let y_size = self.viewport.size().1 as i16;
         if x >= 0 && x < x_size && y >= 0 && y < y_size {
             self.pixel_grid[x as usize][y as usize] = true;
         }
@@ -118,11 +118,11 @@ impl Renderer {
     }
 
     pub fn render(&mut self) {
-        self.screen.draw_chars(&self.pixel_grid);
+        self.viewport.draw_chars(&self.pixel_grid);
     }
 
     pub fn clear(&mut self) {
-        let screen_size = self.screen.get_size();
-        self.pixel_grid = vec![vec![false; screen_size.1 as usize]; screen_size.0 as usize];
+        let viewport_size = self.viewport.size();
+        self.pixel_grid = vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize];
     }
 }

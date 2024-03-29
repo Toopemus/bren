@@ -61,7 +61,7 @@ impl Model {
         })
     }
 
-    pub fn get_index_buffer(&self) -> &Vec<Triangle> {
+    pub fn index_buffer(&self) -> &Vec<Triangle> {
         &self.index_buffer
     }
 
