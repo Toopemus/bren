@@ -2,9 +2,13 @@ use core::time;
 use std::thread::sleep;
 
 use bren::renderer::model::Model;
+use bren::renderer::viewport::Viewport;
 use bren::renderer::Renderer;
 
 fn main() {
+    // let viewport = Viewport::with_size_and_pos(92, 47, 46, 23);
+    // let viewport = Viewport::with_size_and_pos(92, 47, 0, 0);
+    // let mut renderer = Renderer::with_viewport(viewport);
     let mut renderer = Renderer::new();
     renderer.render();
     println!(" -+- Bren terminal drawing library -+-\n");

@@ -1,20 +1,39 @@
-use crossterm::{cursor, style::Print, terminal, QueueableCommand};
+use crossterm::{
+    cursor::{self},
+    style::Print,
+    terminal, QueueableCommand,
+};
 use std::io::{stdout, Stdout, Write};
 
 pub struct Viewport {
     screen_out: Stdout,
     size: (u16, u16),
+    origin: (u16, u16),
 }
 
 impl Viewport {
     pub fn new() -> Viewport {
+        let mut screen_out = stdout();
+        screen_out.queue(cursor::Hide).unwrap();
         let term_size = terminal::window_size().unwrap();
         let width = term_size.columns * 2;
         let height = term_size.rows * 4;
 
         Viewport {
+            screen_out,
+            size: (width, height),
+            origin: (0, 0),
+        }
+    }
+
+    pub fn with_size_and_pos(w: u16, h: u16, x0: u16, y0: u16) -> Viewport {
+        let width = w * 2;
+        let height = h * 4;
+
+        Viewport {
             screen_out: stdout(),
             size: (width, height),
+            origin: (x0, y0),
         }
     }
 
@@ -43,8 +62,16 @@ impl Viewport {
     /// Takes a 2d vector of pixels (on/off) and transforms it into a char vector of braille
     /// characters.
     pub fn draw_chars(&mut self, v: &Vec<Vec<bool>>) {
-        self.screen_out.queue(cursor::MoveTo(0, 0)).unwrap();
-        for row in (0..v[0].len()).rev().step_by(4) {
+        self.screen_out
+            .queue(cursor::MoveTo(self.origin.0, self.origin.1))
+            .unwrap();
+        for (i, row) in (0..v[0].len()).rev().step_by(4).enumerate() {
+            // self.screen_out
+            //     .queue(cursor::MoveTo(0, (self.size.1 - (row - 1) as u16) / 4))
+            //     .unwrap();
+            self.screen_out
+                .queue(cursor::MoveTo(self.origin.0, i as u16 + self.origin.1))
+                .unwrap();
             for col in (0..v.len()).step_by(2) {
                 let tile: [[bool; 4]; 2] = [
                     [

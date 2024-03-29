@@ -59,6 +59,15 @@ impl Renderer {
         }
     }
 
+    pub fn with_viewport(viewport: Viewport) -> Renderer {
+        let viewport_size = viewport.size();
+
+        Renderer {
+            pixel_grid: vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize],
+            viewport,
+        }
+    }
+
     pub fn viewport_size(&self) -> (u16, u16) {
         self.viewport.size()
     }
