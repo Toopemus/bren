@@ -13,14 +13,12 @@ pub struct Viewport {
 
 impl Viewport {
     pub fn new() -> Viewport {
-        let mut screen_out = stdout();
-        screen_out.queue(cursor::Hide).unwrap();
         let term_size = terminal::window_size().unwrap();
         let width = term_size.columns * 2;
         let height = term_size.rows * 4;
 
         Viewport {
-            screen_out,
+            screen_out: stdout(),
             size: (width, height),
             origin: (0, 0),
         }
