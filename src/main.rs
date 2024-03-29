@@ -2,7 +2,7 @@ use core::time;
 use std::thread::sleep;
 
 use bren::renderer::model::Model;
-use bren::renderer::viewport::Viewport;
+// use bren::renderer::viewport::Viewport;
 use bren::renderer::Renderer;
 
 fn main() {

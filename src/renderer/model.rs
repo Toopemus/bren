@@ -1,4 +1,4 @@
-use crate::renderer::{Triangle, Vertex};
+use crate::renderer::{Face, Vertex};
 use std::{error::Error, fs};
 
 use nalgebra::{Point3, Rotation3, Scale3, Translation3};
@@ -20,14 +20,15 @@ impl Transform {
 
 pub struct Model {
     vertex_buffer: Vec<Vertex>,
-    index_buffer: Vec<Triangle>,
+    index_buffer: Vec<Face>,
     transform: Transform,
 }
 
 impl Model {
+    /// Loads an .obj file, THIS IS MOSTLY UNFINISHED AND INCORRECT, LOADS SOME FILES OK
     pub fn load_from_file(filename: &str) -> Result<Model, Box<dyn Error>> {
         let mut vertex_buffer: Vec<Vertex> = vec![];
-        let mut index_buffer: Vec<Triangle> = vec![];
+        let mut index_buffer: Vec<Face> = vec![];
         let obj_file = fs::read_to_string(filename)?;
 
         for line in obj_file.lines() {
@@ -47,10 +48,10 @@ impl Model {
                 vertex_buffer.push(vertex);
             } else if values[0] == "f" {
                 // index data
-                let triangle = Triangle {
+                let face = Face {
                     indexes: (values[1].parse()?, values[2].parse()?, values[3].parse()?),
                 };
-                index_buffer.push(triangle);
+                index_buffer.push(face);
             }
         }
 
@@ -61,7 +62,7 @@ impl Model {
         })
     }
 
-    pub fn index_buffer(&self) -> &Vec<Triangle> {
+    pub fn index_buffer(&self) -> &Vec<Face> {
         &self.index_buffer
     }
 

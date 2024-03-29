@@ -6,7 +6,7 @@ use nalgebra::Point3;
 use viewport::Viewport;
 
 pub struct Vertex {
-    pub(crate) position: Point3<f32>,
+    position: Point3<f32>,
 }
 
 impl Vertex {
@@ -39,8 +39,8 @@ impl Vertex {
     }
 }
 
-pub struct Triangle {
-    pub indexes: (usize, usize, usize),
+pub struct Face {
+    indexes: (usize, usize, usize),
 }
 
 pub struct Renderer {
@@ -73,10 +73,10 @@ impl Renderer {
     }
 
     pub fn draw_object(&mut self, object: &Model) {
-        for triangle in object.index_buffer() {
-            let v0 = object.transform_and_get_vertex_at(triangle.indexes.0 - 1);
-            let v1 = object.transform_and_get_vertex_at(triangle.indexes.1 - 1);
-            let v2 = object.transform_and_get_vertex_at(triangle.indexes.2 - 1);
+        for face in object.index_buffer() {
+            let v0 = object.transform_and_get_vertex_at(face.indexes.0 - 1);
+            let v1 = object.transform_and_get_vertex_at(face.indexes.1 - 1);
+            let v2 = object.transform_and_get_vertex_at(face.indexes.2 - 1);
             Self::draw_line(self, &v0, &v1);
             Self::draw_line(self, &v1, &v2);
             Self::draw_line(self, &v2, &v0);
