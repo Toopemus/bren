@@ -3,7 +3,7 @@ use crossterm::{
     style::Print,
     terminal, QueueableCommand,
 };
-use std::io::{stdout, Stdout, Write};
+use std::io::{self, stdout, Stdout, Write};
 
 pub struct Viewport {
     screen_out: Stdout,
@@ -13,9 +13,9 @@ pub struct Viewport {
 
 impl Viewport {
     pub fn new() -> Viewport {
-        let term_size = terminal::window_size().unwrap();
-        let width = term_size.columns * 2;
-        let height = term_size.rows * 4;
+        let term_size = Self::screen_size().unwrap();
+        let width = term_size.0 * 2;
+        let height = term_size.1 * 4;
 
         Viewport {
             screen_out: stdout(),
@@ -33,6 +33,11 @@ impl Viewport {
             size: (width, height),
             origin: (x0, y0),
         }
+    }
+
+    pub fn screen_size() -> io::Result<(u16, u16)> {
+        let term_size = terminal::window_size()?;
+        Ok((term_size.columns, term_size.rows))
     }
 
     pub fn size(&self) -> (u16, u16) {
@@ -64,9 +69,6 @@ impl Viewport {
             .queue(cursor::MoveTo(self.origin.0, self.origin.1))
             .unwrap();
         for (i, row) in (0..v[0].len()).rev().step_by(4).enumerate() {
-            // self.screen_out
-            //     .queue(cursor::MoveTo(0, (self.size.1 - (row - 1) as u16) / 4))
-            //     .unwrap();
             self.screen_out
                 .queue(cursor::MoveTo(self.origin.0, i as u16 + self.origin.1))
                 .unwrap();

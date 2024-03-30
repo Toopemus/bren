@@ -1,8 +1,15 @@
 use bren::renderer::{model::Model, viewport::Viewport, Renderer};
-use std::{thread::sleep, time::Duration};
 
 fn main() {
-    let mut renderer = Renderer::new(Viewport::new());
+    let screen_size = Viewport::screen_size().unwrap();
+    let viewport = Viewport::with_size_and_pos(
+        screen_size.0 / 2,
+        screen_size.1 / 2,
+        screen_size.0 / 4,
+        screen_size.1 / 4,
+    );
+
+    let mut renderer = Renderer::new(viewport);
     let viewport_size = renderer.viewport.size();
 
     let mut cube =
@@ -14,16 +21,11 @@ fn main() {
         viewport_size.1 as f32 / 2.0,
         0.0,
     );
+    cube.rotate(10.0, 10.0, 0.0);
 
-    let mut i = 0.0;
-    loop {
-        i = if i < 359.0 { i + 1.0 } else { 0.0 };
+    renderer.clear();
+    renderer.draw_object(&cube);
+    renderer.render();
 
-        renderer.clear();
-        cube.rotate(0.0, i, 0.0);
-        renderer.draw_object(&cube);
-        renderer.render();
-
-        sleep(Duration::from_millis(1000 / 30));
-    }
+    loop {}
 }

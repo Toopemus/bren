@@ -44,32 +44,18 @@ pub struct Face {
 }
 
 pub struct Renderer {
-    viewport: Viewport,
+    pub viewport: Viewport,
     pixel_grid: Vec<Vec<bool>>,
 }
 
 impl Renderer {
-    pub fn new() -> Renderer {
-        let viewport = Viewport::new();
+    pub fn new(viewport: Viewport) -> Renderer {
         let viewport_size = viewport.size();
 
         Renderer {
             pixel_grid: vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize],
             viewport,
         }
-    }
-
-    pub fn with_viewport(viewport: Viewport) -> Renderer {
-        let viewport_size = viewport.size();
-
-        Renderer {
-            pixel_grid: vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize],
-            viewport,
-        }
-    }
-
-    pub fn viewport_size(&self) -> (u16, u16) {
-        self.viewport.size()
     }
 
     pub fn draw_object(&mut self, object: &Model) {
