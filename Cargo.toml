@@ -2,6 +2,11 @@
 name = "bren"
 version = "0.1.0"
 edition = "2021"
+description = "Bren is a library for rendering 3D geometry to the terminal using braille characters"
+repository = "https://github.com/Toopemus/bren"
+license = "MIT"
+keywords = ["graphics", "terminal", "3d"]
+categories = ["graphics", "rendering"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
