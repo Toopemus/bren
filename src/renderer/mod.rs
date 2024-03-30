@@ -43,21 +43,51 @@ pub struct Face {
     indexes: (usize, usize, usize),
 }
 
+/// A struct used to render 3D-objects.
+///
+/// The struct should be constructed with [`new`]. It manages a screen buffer to which the objects
+/// are rasterised onto. Applications are expected to call [`clear`] first, then an arbitrary number
+/// of draw calls, after which [`render`] should be called to print the screen buffer to the
+/// terminal. See the method documentation for more info.
+///
+/// [`new`]: #method.new
+/// [`clear`]: #method.clear
+/// [`render`]: #method.render
 pub struct Renderer {
+    /// The viewport that the renderer draws onto.
     pub viewport: Viewport,
-    pixel_grid: Vec<Vec<bool>>,
+    screen_buffer: Vec<Vec<bool>>,
 }
 
 impl Renderer {
+    /// Constructs the renderer. [`Viewport`] must be passed to the constructor.
     pub fn new(viewport: Viewport) -> Renderer {
         let viewport_size = viewport.size();
 
         Renderer {
-            pixel_grid: vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize],
+            screen_buffer: vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize],
             viewport,
         }
     }
 
+    /// Renders the screen buffer on the screen. Should be called after draw-calls. This will not
+    /// erase the screen buffer, so you should call [`clear`] after.
+    ///
+    /// [`clear`]: #method.clear
+    pub fn render(&mut self) {
+        self.viewport.draw_chars(&self.screen_buffer);
+    }
+
+    /// Clears the screen buffer.
+    pub fn clear(&mut self) {
+        let viewport_size = self.viewport.size();
+        self.screen_buffer = vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize];
+    }
+
+    /// Draws a [`Model`] to the screen buffer. calling [`render`] afterwards will render the model
+    /// to the screen.
+    ///
+    /// [`render`]: #method.render
     pub fn draw_object(&mut self, object: &Model) {
         for face in object.index_buffer() {
             let v0 = object.transform_and_get_vertex_at(face.indexes.0 - 1);
@@ -73,7 +103,7 @@ impl Renderer {
         let x_size = self.viewport.size().0 as i16;
         let y_size = self.viewport.size().1 as i16;
         if x >= 0 && x < x_size && y >= 0 && y < y_size {
-            self.pixel_grid[x as usize][y as usize] = true;
+            self.screen_buffer[x as usize][y as usize] = true;
         }
     }
 
@@ -110,14 +140,5 @@ impl Renderer {
                 y1 += sy;
             }
         }
-    }
-
-    pub fn render(&mut self) {
-        self.viewport.draw_chars(&self.pixel_grid);
-    }
-
-    pub fn clear(&mut self) {
-        let viewport_size = self.viewport.size();
-        self.pixel_grid = vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize];
     }
 }
