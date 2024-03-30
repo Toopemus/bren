@@ -5,6 +5,7 @@ use crossterm::{
 };
 use std::io::{self, stdout, Stdout, Write};
 
+#[derive(Debug)]
 pub struct Viewport {
     screen_out: Stdout,
     size: (u16, u16),

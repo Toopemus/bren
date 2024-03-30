@@ -5,6 +5,7 @@ use crate::renderer::model::{Model, Transform};
 use nalgebra::Point3;
 use viewport::Viewport;
 
+#[derive(Debug)]
 pub struct Vertex {
     position: Point3<f32>,
 }
@@ -39,6 +40,7 @@ impl Vertex {
     }
 }
 
+#[derive(Debug)]
 pub struct Face {
     indexes: (usize, usize, usize),
 }
@@ -53,6 +55,7 @@ pub struct Face {
 /// [`new`]: #method.new
 /// [`clear`]: #method.clear
 /// [`render`]: #method.render
+#[derive(Debug)]
 pub struct Renderer {
     /// The viewport that the renderer draws onto.
     pub viewport: Viewport,

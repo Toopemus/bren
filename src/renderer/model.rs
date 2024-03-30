@@ -2,6 +2,8 @@ use crate::renderer::{Face, Vertex};
 use std::{error::Error, fs};
 
 use nalgebra::{Point3, Rotation3, Scale3, Translation3};
+
+#[derive(Debug)]
 pub struct Transform {
     pub position: Translation3<f32>,
     pub scale: Scale3<f32>,
@@ -18,6 +20,7 @@ impl Transform {
     }
 }
 
+#[derive(Debug)]
 pub struct Model {
     vertex_buffer: Vec<Vertex>,
     index_buffer: Vec<Face>,
