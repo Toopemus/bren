@@ -5,12 +5,14 @@ use crate::renderer::model::{Model, Transform};
 use nalgebra::Point3;
 use viewport::Viewport;
 
+/// A single point in 3D-space.
 #[derive(Debug)]
 pub struct Vertex {
     position: Point3<f32>,
 }
 
 impl Vertex {
+    /// Returns a new Vertex with Transform applied.
     pub fn get_transformed(&self, transform: &Transform) -> Vertex {
         let mut transformed_vertex = Vertex {
             position: Point3::new(self.position.x, self.position.y, self.position.z),
@@ -40,6 +42,9 @@ impl Vertex {
     }
 }
 
+/// A face of a 3D-object.
+///
+/// Contains the indexes of the vertices that form the face.
 #[derive(Debug)]
 pub struct Face {
     indexes: (usize, usize, usize),
