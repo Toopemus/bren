@@ -5,6 +5,9 @@ use crossterm::{
 };
 use std::io::{self, stdout, Stdout, Write};
 
+/// Struct that keeps track of the drawable screen area.
+///
+/// Applications should manage terminal resizes manually.
 #[derive(Debug)]
 pub struct Viewport {
     screen_out: Stdout,
@@ -13,6 +16,7 @@ pub struct Viewport {
 }
 
 impl Viewport {
+    /// Initializes a viewport that takes up the entire terminal window.
     pub fn new() -> Viewport {
         let term_size = Self::screen_size().unwrap();
         let width = term_size.0 * 2;
@@ -25,6 +29,7 @@ impl Viewport {
         }
     }
 
+    /// Initializes the viewport with width, height and the upper left-hand coordinate (origin).
     pub fn with_size_and_pos(w: u16, h: u16, x0: u16, y0: u16) -> Viewport {
         let width = w * 2;
         let height = h * 4;
@@ -36,35 +41,19 @@ impl Viewport {
         }
     }
 
+    /// Get the terminal window size wrapped in a Result.
     pub fn screen_size() -> io::Result<(u16, u16)> {
         let term_size = terminal::window_size()?;
         Ok((term_size.columns, term_size.rows))
     }
 
+    /// Getter for the viewport size.
     pub fn size(&self) -> (u16, u16) {
         self.size
     }
 
-    /// Takes a 2 by 4 slice of the pixel buffer and converts it to a unicode braille character.
-    /// https://en.wikipedia.org/wiki/Braille_Patterns#Identifying.2C_naming_and_ordering
-    fn into_braille(tile: [[bool; 4]; 2]) -> char {
-        let ordered_dots: [bool; 8] = [
-            tile[0][0], tile[0][1], tile[0][2], tile[1][0], tile[1][1], tile[1][2], tile[0][3],
-            tile[1][3],
-        ];
-
-        let mut pattern: u32 = 0;
-        for (i, dot) in ordered_dots.into_iter().enumerate() {
-            let dot: u32 = if dot { 1 } else { 0 };
-            pattern += dot << i;
-        }
-
-        pattern += 0x2800; // Shift to get the correct unicode value
-        char::from_u32(pattern).expect("Should generate a valid char")
-    }
-
-    /// Takes a 2d vector of pixels (on/off) and transforms it into a char vector of braille
-    /// characters.
+    /// Takes the screen buffer, converts to braille characters and outputs the result to the
+    /// viewport.
     pub fn draw_chars(&mut self, v: &Vec<Vec<bool>>) {
         self.screen_out
             .queue(cursor::MoveTo(self.origin.0, self.origin.1))
@@ -94,6 +83,24 @@ impl Viewport {
             }
         }
         self.screen_out.flush().unwrap();
+    }
+
+    /// Takes a 2 by 4 slice of the pixel buffer and converts it to a unicode braille character.
+    /// https://en.wikipedia.org/wiki/Braille_Patterns#Identifying.2C_naming_and_ordering
+    fn into_braille(tile: [[bool; 4]; 2]) -> char {
+        let ordered_dots: [bool; 8] = [
+            tile[0][0], tile[0][1], tile[0][2], tile[1][0], tile[1][1], tile[1][2], tile[0][3],
+            tile[1][3],
+        ];
+
+        let mut pattern: u32 = 0;
+        for (i, dot) in ordered_dots.into_iter().enumerate() {
+            let dot: u32 = if dot { 1 } else { 0 };
+            pattern += dot << i;
+        }
+
+        pattern += 0x2800; // Shift to get the correct unicode value
+        char::from_u32(pattern).expect("Should generate a valid char")
     }
 }
 
