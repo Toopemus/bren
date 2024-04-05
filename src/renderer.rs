@@ -56,7 +56,12 @@ impl Renderer {
         Renderer {
             screen_buffer: vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize],
             viewport,
-            camera: Camera::new(),
+            camera: Camera::new(
+                viewport_size.0 as f32 / viewport_size.1 as f32,
+                3.14 / 2.0,
+                1.0,
+                1000.0,
+            ),
         }
     }
 
