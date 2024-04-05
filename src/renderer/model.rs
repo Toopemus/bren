@@ -63,7 +63,7 @@ impl Model {
 
     /// Returns the vertex at index.
     pub fn vertex_at(&self, index: usize) -> Vertex {
-        let transformed_vertex = self.vertex_buffer[index];
+        let transformed_vertex = self.vertex_buffer[index].clone();
 
         transformed_vertex
     }

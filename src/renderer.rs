@@ -9,7 +9,7 @@ use viewport::Viewport;
 use self::camera::Camera;
 
 /// A single point in 3D-space.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct Vertex {
     position: Point3<f32>,
 }
