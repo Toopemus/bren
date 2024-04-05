@@ -1,15 +1,19 @@
 use crate::renderer::{Face, Vertex};
 use std::{error::Error, fs};
 
-use nalgebra::{Point3, Rotation3, Scale3, Translation3};
+use nalgebra::{Isometry3, Point3, Rotation3, Translation3, UnitQuaternion};
+
+use super::camera::Camera;
 
 /// Stores transformation data that is applied to vertices: position, scale, rotation.
+///
+/// Can potentially be refactored as nalgebra::Similarity3
 #[derive(Debug)]
 pub struct Transform {
     /// Position in relation to the origin.
     pub position: Translation3<f32>,
     /// Scaling factors for x, y, and z dimensions.
-    pub scale: Scale3<f32>,
+    // pub scale: Scale3<f32>,
     /// Rotation around the x, y, and z axis in radians.
     pub rotation: Rotation3<f32>,
 }
@@ -18,7 +22,7 @@ impl Transform {
     fn new() -> Transform {
         Transform {
             position: Translation3::new(0.0, 0.0, 0.0),
-            scale: Scale3::new(1.0, 1.0, 1.0),
+            // scale: Scale3::new(1.0, 1.0, 1.0),
             rotation: Rotation3::from_euler_angles(0.0, 0.0, 0.0),
         }
     }
@@ -32,7 +36,9 @@ impl Transform {
 pub struct Model {
     vertex_buffer: Vec<Vertex>,
     index_buffer: Vec<Face>,
-    transform: Transform,
+    // transform: Transform,
+    position: Translation3<f32>,
+    rotation: Rotation3<f32>,
 }
 
 impl Model {
@@ -71,7 +77,8 @@ impl Model {
         Ok(Model {
             vertex_buffer,
             index_buffer,
-            transform: Transform::new(),
+            position: Translation3::new(0.0, 0.0, 0.0),
+            rotation: Rotation3::from_euler_angles(0.0, 0.0, 0.0),
         })
     }
 
@@ -80,26 +87,33 @@ impl Model {
         &self.index_buffer
     }
 
-    /// Applies model transform and returns the vertex at index.
-    pub fn transform_and_get_vertex_at(&self, index: usize) -> Vertex {
-        let transformed_vertex = self.vertex_buffer[index].get_transformed(&self.transform);
+    /// Returns the vertex at index.
+    pub fn vertex_at(&self, index: usize) -> Vertex {
+        let transformed_vertex = self.vertex_buffer[index];
 
         transformed_vertex
     }
 
+    pub fn model_matrix(&self) -> Isometry3<f32> {
+        let model_matrix: Isometry3<f32> =
+            Isometry3::from_parts(self.position, UnitQuaternion::from(self.rotation));
+
+        model_matrix
+    }
+
     /// Translates the object in 3D space.
     pub fn translate(&mut self, x: f32, y: f32, z: f32) {
-        self.transform.position = Translation3::new(x, y, z);
+        self.position = Translation3::new(x, y, z);
     }
 
     /// Scales the object along the x, y, and z axis.
-    pub fn scale(&mut self, x: f32, y: f32, z: f32) {
-        self.transform.scale = Scale3::new(x, y, z);
-    }
+    // pub fn scale(&mut self, x: f32, y: f32, z: f32) {
+    //     self.transform.scale = Scale3::new(x, y, z);
+    // }
 
     /// Rotates the object by x, y, and z degrees along the respective axis.
     pub fn rotate(&mut self, x: f32, y: f32, z: f32) {
-        self.transform.rotation =
+        self.rotation =
             Rotation3::from_euler_angles(x.to_radians(), y.to_radians(), z.to_radians());
     }
 }

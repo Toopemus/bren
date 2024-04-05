@@ -1,44 +1,24 @@
+pub mod camera;
 pub mod model;
 pub mod viewport;
 
-use crate::renderer::model::{Model, Transform};
-use nalgebra::Point3;
+use crate::renderer::model::Model;
+use nalgebra::{Isometry3, Matrix4, Point3};
 use viewport::Viewport;
 
+use self::camera::Camera;
+
 /// A single point in 3D-space.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Vertex {
     position: Point3<f32>,
 }
 
 impl Vertex {
-    /// Returns a new Vertex with Transform applied.
-    pub fn get_transformed(&self, transform: &Transform) -> Vertex {
-        let mut transformed_vertex = Vertex {
-            position: Point3::new(self.position.x, self.position.y, self.position.z),
-        };
-        transformed_vertex.rotate(&transform);
-        transformed_vertex.scale(&transform);
-        transformed_vertex.translate(&transform);
-
-        transformed_vertex
-    }
-
-    fn translate(&mut self, transform: &Transform) {
-        self.position.x += transform.position.x;
-        self.position.y += transform.position.y;
-        self.position.z += transform.position.z;
-    }
-
-    fn scale(&mut self, transform: &Transform) {
-        self.position.x *= transform.scale.x;
-        self.position.y *= transform.scale.y;
-        self.position.z *= transform.scale.z;
-    }
-
-    fn rotate(&mut self, transform: &Transform) {
-        // TODO: is there an unnecessary copy here?
-        self.position = transform.rotation * self.position;
+    pub fn project(&mut self, mvp_matrix: Matrix4<f32>, view_width: f32, view_height: f32) {
+        self.position = mvp_matrix.transform_point(&self.position);
+        self.position.x = self.position.x * view_width + view_width / 2.0;
+        self.position.y = self.position.y * view_height + view_height / 2.0;
     }
 }
 
@@ -65,6 +45,7 @@ pub struct Renderer {
     /// The viewport that the renderer draws onto.
     pub viewport: Viewport,
     screen_buffer: Vec<Vec<bool>>,
+    camera: Camera,
 }
 
 impl Renderer {
@@ -75,6 +56,7 @@ impl Renderer {
         Renderer {
             screen_buffer: vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize],
             viewport,
+            camera: Camera::new(),
         }
     }
 
@@ -96,15 +78,30 @@ impl Renderer {
     /// to the screen.
     ///
     /// [`render`]: #method.render
-    pub fn draw_object(&mut self, object: &Model) {
-        for face in object.index_buffer() {
-            let v0 = object.transform_and_get_vertex_at(face.indexes.0 - 1);
-            let v1 = object.transform_and_get_vertex_at(face.indexes.1 - 1);
-            let v2 = object.transform_and_get_vertex_at(face.indexes.2 - 1);
+    pub fn draw_object(&mut self, model: &Model) {
+        let mvp_matrix = Self::construct_mvp(model.model_matrix(), &self.camera);
+        let (width, height) = self.viewport.size();
+
+        for face in model.index_buffer() {
+            let mut v0 = model.vertex_at(face.indexes.0 - 1);
+            let mut v1 = model.vertex_at(face.indexes.1 - 1);
+            let mut v2 = model.vertex_at(face.indexes.2 - 1);
+
+            v0.project(mvp_matrix, width as f32, height as f32);
+            v1.project(mvp_matrix, width as f32, height as f32);
+            v2.project(mvp_matrix, width as f32, height as f32);
+
             Self::draw_line(self, &v0, &v1);
             Self::draw_line(self, &v1, &v2);
             Self::draw_line(self, &v2, &v0);
         }
+    }
+
+    fn construct_mvp(model_matrix: Isometry3<f32>, camera: &Camera) -> Matrix4<f32> {
+        let model_view_matrix = model_matrix * camera.view_matrix;
+        let mvp_matrix = camera.projection_matrix.as_matrix() * model_view_matrix.to_homogeneous();
+
+        mvp_matrix
     }
 
     fn draw_pixel(&mut self, x: i16, y: i16) {

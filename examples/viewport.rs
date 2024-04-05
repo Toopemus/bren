@@ -19,7 +19,7 @@ fn main() {
     cube.translate(
         viewport_size.0 as f32 / 2.0,
         viewport_size.1 as f32 / 2.0,
-        0.0,
+        -10.0,
     );
     cube.rotate(10.0, 10.0, 0.0);
 
