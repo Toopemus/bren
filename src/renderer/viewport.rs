@@ -1,9 +1,14 @@
 use crossterm::{
-    cursor::{self},
-    style::Print,
+    cursor,
+    style::{Print, SetForegroundColor},
     terminal, QueueableCommand,
 };
-use std::io::{self, stdout, Stdout, Write};
+use std::{
+    i32,
+    io::{self, stdout, Stdout, Write},
+};
+
+use super::Color;
 
 /// Struct that keeps track of the drawable screen area.
 ///
@@ -54,7 +59,7 @@ impl Viewport {
 
     /// Takes the screen buffer, converts to braille characters and outputs the result to the
     /// viewport.
-    pub fn draw_chars(&mut self, v: &Vec<Vec<bool>>) {
+    pub fn draw_chars(&mut self, v: &Vec<Vec<Color>>) {
         self.screen_out
             .queue(cursor::MoveTo(self.origin.0, self.origin.1))
             .unwrap();
@@ -63,7 +68,7 @@ impl Viewport {
                 .queue(cursor::MoveTo(self.origin.0, i as u16 + self.origin.1))
                 .unwrap();
             for col in (0..v.len()).step_by(2) {
-                let tile: [[bool; 4]; 2] = [
+                let tile: [[Color; 4]; 2] = [
                     [
                         v[col][row],
                         v[col][row - 1],
@@ -78,6 +83,8 @@ impl Viewport {
                     ],
                 ];
                 self.screen_out
+                    .queue(SetForegroundColor(Self::average_color(tile)))
+                    .unwrap()
                     .queue(Print(Self::into_braille(tile)))
                     .unwrap();
             }
@@ -85,17 +92,37 @@ impl Viewport {
         self.screen_out.flush().unwrap();
     }
 
+    fn average_color(tile: [[Color; 4]; 2]) -> crossterm::style::Color {
+        let mut sum_r: u32 = 0;
+        let mut sum_g: u32 = 0;
+        let mut sum_b: u32 = 0;
+        for dot in tile.into_iter().flatten() {
+            sum_r += dot.0 as u32;
+            sum_g += dot.1 as u32;
+            sum_b += dot.2 as u32;
+        }
+        crossterm::style::Color::Rgb {
+            r: (sum_r / 8) as u8,
+            g: (sum_g / 8) as u8,
+            b: (sum_b / 8) as u8,
+        }
+    }
+
     /// Takes a 2 by 4 slice of the pixel buffer and converts it to a unicode braille character.
     /// https://en.wikipedia.org/wiki/Braille_Patterns#Identifying.2C_naming_and_ordering
-    fn into_braille(tile: [[bool; 4]; 2]) -> char {
-        let ordered_dots: [bool; 8] = [
+    fn into_braille(tile: [[Color; 4]; 2]) -> char {
+        let ordered_dots: [Color; 8] = [
             tile[0][0], tile[0][1], tile[0][2], tile[1][0], tile[1][1], tile[1][2], tile[0][3],
             tile[1][3],
         ];
 
         let mut pattern: u32 = 0;
         for (i, dot) in ordered_dots.into_iter().enumerate() {
-            let dot: u32 = if dot { 1 } else { 0 };
+            let dot: u32 = if dot.0 != 0 && dot.1 != 0 && dot.2 != 0 {
+                1
+            } else {
+                0
+            };
             pattern += dot << i;
         }
 
@@ -106,6 +133,8 @@ impl Viewport {
 
 #[cfg(test)]
 mod tests {
+    use crate::renderer::Color;
+
     use super::Viewport;
     #[test]
     fn test_into_braille_all() {
@@ -113,7 +142,20 @@ mod tests {
         // o o
         // o o
         // o o
-        let all_dots = [[true, true, true, true], [true, true, true, true]];
+        let all_dots = [
+            [
+                Color(255, 255, 255),
+                Color(255, 255, 255),
+                Color(255, 255, 255),
+                Color(255, 255, 255),
+            ],
+            [
+                Color(255, 255, 255),
+                Color(255, 255, 255),
+                Color(255, 255, 255),
+                Color(255, 255, 255),
+            ],
+        ];
         assert_eq!('\u{28FF}', Viewport::into_braille(all_dots));
     }
 
@@ -123,7 +165,20 @@ mod tests {
         // _ _
         // _ o
         // o _
-        let some_dots = [[true, false, false, true], [true, false, true, false]];
+        let some_dots = [
+            [
+                Color(255, 255, 255),
+                Color(0, 0, 0),
+                Color(0, 0, 0),
+                Color(255, 255, 255),
+            ],
+            [
+                Color(255, 255, 255),
+                Color(0, 0, 0),
+                Color(255, 255, 255),
+                Color(0, 0, 0),
+            ],
+        ];
         assert_eq!('\u{2869}', Viewport::into_braille(some_dots));
     }
 
@@ -133,7 +188,20 @@ mod tests {
         // _ _
         // _ _
         // _ _
-        let no_dots = [[false, false, false, false], [false, false, false, false]];
+        let no_dots = [
+            [
+                Color(0, 0, 0),
+                Color(0, 0, 0),
+                Color(0, 0, 0),
+                Color(0, 0, 0),
+            ],
+            [
+                Color(0, 0, 0),
+                Color(0, 0, 0),
+                Color(0, 0, 0),
+                Color(0, 0, 0),
+            ],
+        ];
         assert_eq!('\u{2800}', Viewport::into_braille(no_dots));
     }
 }

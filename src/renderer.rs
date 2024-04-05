@@ -3,10 +3,13 @@ pub mod model;
 pub mod viewport;
 
 use crate::renderer::model::Model;
-use nalgebra::{Matrix4, Point3};
+use nalgebra::{Matrix4, Point2, Point3};
 use viewport::Viewport;
 
 use self::camera::Camera;
+
+#[derive(Clone, Copy, Debug)]
+pub struct Color(u8, u8, u8);
 
 /// A single point in 3D-space.
 #[derive(Clone, Debug)]
@@ -45,8 +48,9 @@ pub struct Face {
 pub struct Renderer {
     /// The viewport that the renderer draws onto.
     pub viewport: Viewport,
-    screen_buffer: Vec<Vec<bool>>,
+    screen_buffer: Vec<Vec<Color>>,
     camera: Camera,
+    wireframe: bool,
 }
 
 impl Renderer {
@@ -55,7 +59,10 @@ impl Renderer {
         let viewport_size = viewport.size();
 
         Renderer {
-            screen_buffer: vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize],
+            screen_buffer: vec![
+                vec![Color(0, 0, 0); viewport_size.1 as usize];
+                viewport_size.0 as usize
+            ],
             viewport,
             camera: Camera::new(
                 viewport_size.0 as f32 / viewport_size.1 as f32,
@@ -63,6 +70,27 @@ impl Renderer {
                 1.0,
                 1000.0,
             ),
+            wireframe: false,
+        }
+    }
+
+    /// Constructs a wireframe renderer. [`Viewport`] must be passed to the constructor.
+    pub fn new_wireframe(viewport: Viewport) -> Renderer {
+        let viewport_size = viewport.size();
+
+        Renderer {
+            screen_buffer: vec![
+                vec![Color(0, 0, 0); viewport_size.1 as usize];
+                viewport_size.0 as usize
+            ],
+            viewport,
+            camera: Camera::new(
+                viewport_size.0 as f32 / viewport_size.1 as f32,
+                3.14 / 2.0,
+                1.0,
+                1000.0,
+            ),
+            wireframe: true,
         }
     }
 
@@ -77,7 +105,8 @@ impl Renderer {
     /// Clears the screen buffer.
     pub fn clear(&mut self) {
         let viewport_size = self.viewport.size();
-        self.screen_buffer = vec![vec![false; viewport_size.1 as usize]; viewport_size.0 as usize];
+        self.screen_buffer =
+            vec![vec![Color(0, 0, 0); viewport_size.1 as usize]; viewport_size.0 as usize];
     }
 
     /// Draws a [`Model`] to the screen buffer. calling [`render`] afterwards will render the model
@@ -99,17 +128,69 @@ impl Renderer {
             v1.project(mvp_matrix, width as f32, height as f32);
             v2.project(mvp_matrix, width as f32, height as f32);
 
-            Self::draw_line(self, &v0, &v1);
-            Self::draw_line(self, &v1, &v2);
-            Self::draw_line(self, &v2, &v0);
+            if self.wireframe {
+                Self::draw_line(self, &v0, &v1);
+                Self::draw_line(self, &v1, &v2);
+                Self::draw_line(self, &v2, &v0);
+            } else {
+                Self::draw_triangle(self, &v0, &v1, &v2);
+            }
         }
     }
 
-    fn draw_pixel(&mut self, x: i16, y: i16) {
+    fn draw_triangle(&mut self, v0: &Vertex, v1: &Vertex, v2: &Vertex) {
+        let (bbmin, bbmax) = Self::bounding_box(&v0, &v1, &v2);
+        let p0 = Point2::new(v0.position.x, v0.position.y);
+        let p1 = Point2::new(v1.position.x, v1.position.y);
+        let p2 = Point2::new(v2.position.x, v2.position.y);
+
+        for x in bbmin.0..bbmax.0 {
+            for y in bbmin.1..bbmax.1 {
+                let mut inside = true;
+                inside &= 0.0 <= Self::edge_function(&p0, &p1, &Point2::new(x as f32, y as f32));
+                inside &= 0.0 <= Self::edge_function(&p1, &p2, &Point2::new(x as f32, y as f32));
+                inside &= 0.0 <= Self::edge_function(&p2, &p0, &Point2::new(x as f32, y as f32));
+
+                if inside {
+                    Self::draw_pixel(self, x, y, Color(255, 255, 255))
+                }
+            }
+        }
+    }
+
+    fn edge_function(v0: &Point2<f32>, v1: &Point2<f32>, v2: &Point2<f32>) -> f32 {
+        (v2.x - v0.x) * (v1.y - v0.y) - (v2.y - v0.y) * (v1.x - v0.x)
+    }
+
+    fn bounding_box(v0: &Vertex, v1: &Vertex, v2: &Vertex) -> ((i16, i16), (i16, i16)) {
+        let mut min = (0, 0);
+        let mut max = (0, 0);
+
+        min.0 = std::cmp::min(
+            std::cmp::min(v0.position.x as i16, v1.position.x as i16),
+            v2.position.x as i16,
+        );
+        min.1 = std::cmp::min(
+            std::cmp::min(v0.position.y as i16, v1.position.y as i16),
+            v2.position.y as i16,
+        );
+        max.0 = std::cmp::max(
+            std::cmp::max(v0.position.x.ceil() as i16, v1.position.x.ceil() as i16),
+            v2.position.x.ceil() as i16,
+        );
+        max.1 = std::cmp::max(
+            std::cmp::max(v0.position.y.ceil() as i16, v1.position.y.ceil() as i16),
+            v2.position.y.ceil() as i16,
+        );
+
+        (min, max)
+    }
+
+    fn draw_pixel(&mut self, x: i16, y: i16, color: Color) {
         let x_size = self.viewport.size().0 as i16;
         let y_size = self.viewport.size().1 as i16;
         if x >= 0 && x < x_size && y >= 0 && y < y_size {
-            self.screen_buffer[x as usize][y as usize] = true;
+            self.screen_buffer[x as usize][y as usize] = color;
         }
     }
 
@@ -126,7 +207,7 @@ impl Renderer {
         let mut err2;
 
         loop {
-            Self::draw_pixel(self, x1, y1);
+            Self::draw_pixel(self, x1, y1, Color(255, 255, 255));
             if x1 == x2 && y1 == y2 {
                 break;
             }
