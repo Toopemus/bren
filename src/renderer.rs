@@ -3,7 +3,7 @@ pub mod model;
 pub mod viewport;
 
 use crate::renderer::model::Model;
-use nalgebra::{Isometry3, Matrix4, Point3};
+use nalgebra::{Matrix4, Point3};
 use viewport::Viewport;
 
 use self::camera::Camera;
@@ -15,7 +15,8 @@ pub struct Vertex {
 }
 
 impl Vertex {
-    pub fn project(&mut self, mvp_matrix: Matrix4<f32>, view_width: f32, view_height: f32) {
+    /// Applies model view projection and returns screen coordinates.
+    fn project(&mut self, mvp_matrix: Matrix4<f32>, view_width: f32, view_height: f32) {
         self.position = mvp_matrix.transform_point(&self.position);
         self.position.x = self.position.x * view_width + view_width / 2.0;
         self.position.y = self.position.y * view_height + view_height / 2.0;
@@ -84,7 +85,9 @@ impl Renderer {
     ///
     /// [`render`]: #method.render
     pub fn draw_object(&mut self, model: &Model) {
-        let mvp_matrix = Self::construct_mvp(model.model_matrix(), &self.camera);
+        let model_view_matrix = model.model_matrix() * self.camera.view_matrix;
+        let mvp_matrix = self.camera.projection.as_matrix() * model_view_matrix.to_homogeneous();
+
         let (width, height) = self.viewport.size();
 
         for face in model.index_buffer() {
@@ -100,13 +103,6 @@ impl Renderer {
             Self::draw_line(self, &v1, &v2);
             Self::draw_line(self, &v2, &v0);
         }
-    }
-
-    fn construct_mvp(model_matrix: Isometry3<f32>, camera: &Camera) -> Matrix4<f32> {
-        let model_view_matrix = model_matrix * camera.view_matrix;
-        let mvp_matrix = camera.projection_matrix.as_matrix() * model_view_matrix.to_homogeneous();
-
-        mvp_matrix
     }
 
     fn draw_pixel(&mut self, x: i16, y: i16) {

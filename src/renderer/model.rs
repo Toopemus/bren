@@ -68,6 +68,7 @@ impl Model {
         transformed_vertex
     }
 
+    /// Calculates model matrix from translation and rotation.
     pub fn model_matrix(&self) -> Isometry3<f32> {
         let model_matrix: Isometry3<f32> = self.position * self.rotation;
 
