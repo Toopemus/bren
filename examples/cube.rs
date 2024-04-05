@@ -3,17 +3,11 @@ use std::{thread::sleep, time::Duration};
 
 fn main() {
     let mut renderer = Renderer::new(Viewport::new());
-    let viewport_size = renderer.viewport.size();
 
     let mut cube =
         Model::load_from_file("examples/cube.obj").expect("File should be included and valid");
 
-    // cube.scale(20.0, 20.0, 20.0);
-    cube.translate(
-        // viewport_size.0 as f32 / 2.0,
-        // viewport_size.1 as f32 / 2.0,
-        0.0, 0.0, -5.0,
-    );
+    cube.translate(0.0, 0.0, -5.0);
 
     let mut i = 0.0;
     loop {

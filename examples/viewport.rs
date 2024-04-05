@@ -10,18 +10,11 @@ fn main() {
     );
 
     let mut renderer = Renderer::new(viewport);
-    let viewport_size = renderer.viewport.size();
 
     let mut cube =
         Model::load_from_file("examples/cube.obj").expect("File should be included and valid");
 
-    cube.scale(20.0, 20.0, 20.0);
-    cube.translate(
-        viewport_size.0 as f32 / 2.0,
-        viewport_size.1 as f32 / 2.0,
-        -10.0,
-    );
-    cube.rotate(10.0, 10.0, 0.0);
+    cube.translate(0.0, 0.0, -5.0);
 
     renderer.clear();
     renderer.draw_object(&cube);

@@ -1,32 +1,7 @@
 use crate::renderer::{Face, Vertex};
 use std::{error::Error, fs};
 
-use nalgebra::{Isometry3, Point3, Rotation3, Translation3, UnitQuaternion};
-
-use super::camera::Camera;
-
-/// Stores transformation data that is applied to vertices: position, scale, rotation.
-///
-/// Can potentially be refactored as nalgebra::Similarity3
-#[derive(Debug)]
-pub struct Transform {
-    /// Position in relation to the origin.
-    pub position: Translation3<f32>,
-    /// Scaling factors for x, y, and z dimensions.
-    // pub scale: Scale3<f32>,
-    /// Rotation around the x, y, and z axis in radians.
-    pub rotation: Rotation3<f32>,
-}
-
-impl Transform {
-    fn new() -> Transform {
-        Transform {
-            position: Translation3::new(0.0, 0.0, 0.0),
-            // scale: Scale3::new(1.0, 1.0, 1.0),
-            rotation: Rotation3::from_euler_angles(0.0, 0.0, 0.0),
-        }
-    }
-}
+use nalgebra::{Isometry3, Point3, Translation3, UnitQuaternion};
 
 /// Struct that manages individual 3D objects.
 ///
@@ -36,9 +11,8 @@ impl Transform {
 pub struct Model {
     vertex_buffer: Vec<Vertex>,
     index_buffer: Vec<Face>,
-    // transform: Transform,
     position: Translation3<f32>,
-    rotation: Rotation3<f32>,
+    rotation: UnitQuaternion<f32>,
 }
 
 impl Model {
@@ -78,7 +52,7 @@ impl Model {
             vertex_buffer,
             index_buffer,
             position: Translation3::new(0.0, 0.0, 0.0),
-            rotation: Rotation3::from_euler_angles(0.0, 0.0, 0.0),
+            rotation: UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0),
         })
     }
 
@@ -95,8 +69,7 @@ impl Model {
     }
 
     pub fn model_matrix(&self) -> Isometry3<f32> {
-        let model_matrix: Isometry3<f32> =
-            Isometry3::from_parts(self.position, UnitQuaternion::from(self.rotation));
+        let model_matrix: Isometry3<f32> = self.position * self.rotation;
 
         model_matrix
     }
@@ -106,14 +79,9 @@ impl Model {
         self.position = Translation3::new(x, y, z);
     }
 
-    /// Scales the object along the x, y, and z axis.
-    // pub fn scale(&mut self, x: f32, y: f32, z: f32) {
-    //     self.transform.scale = Scale3::new(x, y, z);
-    // }
-
     /// Rotates the object by x, y, and z degrees along the respective axis.
     pub fn rotate(&mut self, x: f32, y: f32, z: f32) {
         self.rotation =
-            Rotation3::from_euler_angles(x.to_radians(), y.to_radians(), z.to_radians());
+            UnitQuaternion::from_euler_angles(x.to_radians(), y.to_radians(), z.to_radians());
     }
 }

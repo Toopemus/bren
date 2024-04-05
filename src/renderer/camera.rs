@@ -8,8 +8,8 @@ pub struct Camera {
 
 impl Camera {
     pub fn new(aspect: f32, fovy: f32, znear: f32, zfar: f32) -> Camera {
-        let eye = Point3::new(0.0, 0.0, 1.0);
-        let target = Point3::new(0.0, 0.0, 0.0);
+        let eye = Point3::new(0.0, 0.0, 0.0);
+        let target = Point3::new(0.0, 0.0, -1.0);
         let view_matrix = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
 
         let projection_matrix = Perspective3::new(aspect, fovy, znear, zfar);
