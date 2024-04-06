@@ -12,7 +12,7 @@ pub struct Model {
     vertex_buffer: Vec<Vertex>,
     index_buffer: Vec<Face>,
     position: Translation3<f32>,
-    rotation: UnitQuaternion<f32>,
+    pub rotation: UnitQuaternion<f32>,
 }
 
 impl Model {

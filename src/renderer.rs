@@ -3,7 +3,7 @@ pub mod model;
 pub mod viewport;
 
 use crate::renderer::model::Model;
-use nalgebra::{Matrix4, Point2, Point3};
+use nalgebra::{Matrix4, Point2, Point3, Vector3};
 use viewport::Viewport;
 
 use self::camera::Camera;
@@ -119,10 +119,18 @@ impl Renderer {
 
         let (width, height) = self.viewport.size();
 
+        let light = Vector3::new(0.0, 0.0, -1.0);
+
         for face in model.index_buffer() {
             let mut v0 = model.vertex_at(face.indexes.0 - 1);
             let mut v1 = model.vertex_at(face.indexes.1 - 1);
             let mut v2 = model.vertex_at(face.indexes.2 - 1);
+
+            let mut normal = (v2.position - v0.position).cross(&(v1.position - v0.position));
+
+            normal = model.rotation * normal.normalize();
+            let light_intensity = normal.dot(&light);
+            let intensity = (light_intensity * 255.0) as u8;
 
             v0.project(mvp_matrix, width as f32, height as f32);
             v1.project(mvp_matrix, width as f32, height as f32);
@@ -133,12 +141,20 @@ impl Renderer {
                 Self::draw_line(self, &v1, &v2);
                 Self::draw_line(self, &v2, &v0);
             } else {
-                Self::draw_triangle(self, &v0, &v1, &v2);
+                if intensity > 0 {
+                    Self::draw_triangle(
+                        self,
+                        &v0,
+                        &v1,
+                        &v2,
+                        Color(intensity, intensity, intensity),
+                    );
+                }
             }
         }
     }
 
-    fn draw_triangle(&mut self, v0: &Vertex, v1: &Vertex, v2: &Vertex) {
+    fn draw_triangle(&mut self, v0: &Vertex, v1: &Vertex, v2: &Vertex, color: Color) {
         let (bbmin, bbmax) = Self::bounding_box(&v0, &v1, &v2);
         let p0 = Point2::new(v0.position.x, v0.position.y);
         let p1 = Point2::new(v1.position.x, v1.position.y);
@@ -146,20 +162,22 @@ impl Renderer {
 
         for x in bbmin.0..bbmax.0 {
             for y in bbmin.1..bbmax.1 {
+                let screen_point = Point2::new(x as f32, y as f32);
+
                 let mut inside = true;
-                inside &= 0.0 <= Self::edge_function(&p0, &p1, &Point2::new(x as f32, y as f32));
-                inside &= 0.0 <= Self::edge_function(&p1, &p2, &Point2::new(x as f32, y as f32));
-                inside &= 0.0 <= Self::edge_function(&p2, &p0, &Point2::new(x as f32, y as f32));
+                inside &= 0.0 <= Self::edge_function(&p0, &p1, &screen_point);
+                inside &= 0.0 <= Self::edge_function(&p1, &p2, &screen_point);
+                inside &= 0.0 <= Self::edge_function(&p2, &p0, &screen_point);
 
                 if inside {
-                    Self::draw_pixel(self, x, y, Color(255, 255, 255))
+                    Self::draw_pixel(self, x, y, color);
                 }
             }
         }
     }
 
     fn edge_function(v0: &Point2<f32>, v1: &Point2<f32>, v2: &Point2<f32>) -> f32 {
-        (v2.x - v0.x) * (v1.y - v0.y) - (v2.y - v0.y) * (v1.x - v0.x)
+        -((v2.x - v0.x) * (v1.y - v0.y) - (v2.y - v0.y) * (v1.x - v0.x))
     }
 
     fn bounding_box(v0: &Vertex, v1: &Vertex, v2: &Vertex) -> ((i16, i16), (i16, i16)) {

@@ -3,10 +3,7 @@ use crossterm::{
     style::{Print, SetForegroundColor},
     terminal, QueueableCommand,
 };
-use std::{
-    i32,
-    io::{self, stdout, Stdout, Write},
-};
+use std::io::{self, stdout, Stdout, Write};
 
 use super::Color;
 
@@ -118,7 +115,7 @@ impl Viewport {
 
         let mut pattern: u32 = 0;
         for (i, dot) in ordered_dots.into_iter().enumerate() {
-            let dot: u32 = if dot.0 != 0 && dot.1 != 0 && dot.2 != 0 {
+            let dot: u32 = if dot.0 != 0 || dot.1 != 0 || dot.2 != 0 {
                 1
             } else {
                 0
