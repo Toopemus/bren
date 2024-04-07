@@ -56,6 +56,54 @@ impl Model {
         })
     }
 
+    pub fn new_plane(div: i16, width: f32) -> Model {
+        let mut vertex_buffer: Vec<Vertex> = vec![];
+        let mut index_buffer: Vec<Face> = vec![];
+
+        let div_length = width / div as f32;
+
+        for x in 0..div + 1 {
+            for y in 0..div + 1 {
+                let offset = width / 2.0;
+                vertex_buffer.push(Vertex {
+                    position: Point3::new(
+                        (x as f32 * div_length) - offset,
+                        (y as f32 * div_length) - offset,
+                        0.0,
+                    ),
+                });
+            }
+        }
+
+        for y in 0..div {
+            for x in 0..div {
+                let curr_index = ((x + 1) + y * (div + 1)) as usize;
+                index_buffer.push(Face {
+                    indexes: (curr_index, curr_index + (div + 1) as usize, curr_index + 1),
+                });
+                index_buffer.push(Face {
+                    indexes: (
+                        curr_index + 1,
+                        curr_index + (div + 1) as usize,
+                        curr_index + 1 + (div + 1) as usize,
+                    ),
+                });
+            }
+        }
+
+        Model {
+            vertex_buffer,
+            index_buffer,
+            position: Translation3::new(0.0, 0.0, 0.0),
+            rotation: UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0),
+        }
+    }
+
+    /// Getter for the model's vertex buffer.
+    pub fn vertex_buffer(&mut self) -> &mut Vec<Vertex> {
+        &mut self.vertex_buffer
+    }
+
     /// Getter for the model's index buffer.
     pub fn index_buffer(&self) -> &Vec<Face> {
         &self.index_buffer

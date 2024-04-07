@@ -14,7 +14,7 @@ pub struct Color(u8, u8, u8);
 /// A single point in 3D-space.
 #[derive(Clone, Debug)]
 pub struct Vertex {
-    position: Point3<f32>,
+    pub position: Point3<f32>,
 }
 
 impl Vertex {
