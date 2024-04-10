@@ -26,7 +26,7 @@ impl Model {
 
         for line in obj_file.lines() {
             let values: Vec<&str> = line.split_whitespace().collect();
-            if values.len() == 0 {
+            if values.is_empty() {
                 continue;
             }
             if values[0] == "v" {
@@ -111,9 +111,7 @@ impl Model {
 
     /// Returns the vertex at index.
     pub fn vertex_at(&self, index: usize) -> Vertex {
-        let transformed_vertex = self.vertex_buffer[index].clone();
-
-        transformed_vertex
+        self.vertex_buffer[index].clone()
     }
 
     /// Calculates model matrix from translation and rotation.

@@ -17,6 +17,12 @@ pub struct Viewport {
     origin: (u16, u16),
 }
 
+impl Default for Viewport {
+    fn default() -> Self {
+        Viewport::new()
+    }
+}
+
 impl Viewport {
     /// Initializes a viewport that takes up the entire terminal window.
     pub fn new() -> Viewport {
@@ -56,7 +62,7 @@ impl Viewport {
 
     /// Takes the screen buffer, converts to braille characters and outputs the result to the
     /// viewport.
-    pub fn draw_chars(&mut self, v: &Vec<Vec<Color>>) {
+    pub fn draw_chars(&mut self, v: &[Vec<Color>]) {
         self.screen_out
             .queue(cursor::MoveTo(self.origin.0, self.origin.1))
             .unwrap();

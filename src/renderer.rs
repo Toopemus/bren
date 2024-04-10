@@ -66,7 +66,7 @@ impl Renderer {
             viewport,
             camera: Camera::new(
                 viewport_size.0 as f32 / viewport_size.1 as f32,
-                3.14 / 2.0,
+                std::f32::consts::FRAC_PI_2,
                 1.0,
                 1000.0,
             ),
@@ -86,7 +86,7 @@ impl Renderer {
             viewport,
             camera: Camera::new(
                 viewport_size.0 as f32 / viewport_size.1 as f32,
-                3.14 / 2.0,
+                std::f32::consts::FRAC_PI_2,
                 1.0,
                 1000.0,
             ),
@@ -140,22 +140,14 @@ impl Renderer {
                 Self::draw_line(self, &v0, &v1);
                 Self::draw_line(self, &v1, &v2);
                 Self::draw_line(self, &v2, &v0);
-            } else {
-                if intensity > 0 {
-                    Self::draw_triangle(
-                        self,
-                        &v0,
-                        &v1,
-                        &v2,
-                        Color(intensity, intensity, intensity),
-                    );
-                }
+            } else if intensity > 0 {
+                Self::draw_triangle(self, &v0, &v1, &v2, Color(intensity, intensity, intensity));
             }
         }
     }
 
     fn draw_triangle(&mut self, v0: &Vertex, v1: &Vertex, v2: &Vertex, color: Color) {
-        let (bbmin, bbmax) = Self::bounding_box(&v0, &v1, &v2);
+        let (bbmin, bbmax) = Self::bounding_box(v0, v1, v2);
         let p0 = Point2::new(v0.position.x, v0.position.y);
         let p1 = Point2::new(v1.position.x, v1.position.y);
         let p2 = Point2::new(v2.position.x, v2.position.y);
