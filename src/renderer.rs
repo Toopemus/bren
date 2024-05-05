@@ -147,7 +147,7 @@ impl Renderer {
     }
 
     fn draw_triangle(&mut self, v0: &Vertex, v1: &Vertex, v2: &Vertex, color: Color) {
-        let (bbmin, bbmax) = Self::bounding_box(v0, v1, v2);
+        let (bbmin, bbmax) = bounding_box(v0, v1, v2);
         let p0 = Point2::new(v0.position.x, v0.position.y);
         let p1 = Point2::new(v1.position.x, v1.position.y);
         let p2 = Point2::new(v2.position.x, v2.position.y);
@@ -157,43 +157,15 @@ impl Renderer {
                 let screen_point = Point2::new(x as f32, y as f32);
 
                 let mut inside = true;
-                inside &= 0.0 <= Self::edge_function(&p0, &p1, &screen_point);
-                inside &= 0.0 <= Self::edge_function(&p1, &p2, &screen_point);
-                inside &= 0.0 <= Self::edge_function(&p2, &p0, &screen_point);
+                inside &= 0.0 <= edge_function(&p0, &p1, &screen_point);
+                inside &= 0.0 <= edge_function(&p1, &p2, &screen_point);
+                inside &= 0.0 <= edge_function(&p2, &p0, &screen_point);
 
                 if inside {
                     Self::draw_pixel(self, x, y, color);
                 }
             }
         }
-    }
-
-    fn edge_function(v0: &Point2<f32>, v1: &Point2<f32>, v2: &Point2<f32>) -> f32 {
-        -((v2.x - v0.x) * (v1.y - v0.y) - (v2.y - v0.y) * (v1.x - v0.x))
-    }
-
-    fn bounding_box(v0: &Vertex, v1: &Vertex, v2: &Vertex) -> ((i16, i16), (i16, i16)) {
-        let mut min = (0, 0);
-        let mut max = (0, 0);
-
-        min.0 = std::cmp::min(
-            std::cmp::min(v0.position.x as i16, v1.position.x as i16),
-            v2.position.x as i16,
-        );
-        min.1 = std::cmp::min(
-            std::cmp::min(v0.position.y as i16, v1.position.y as i16),
-            v2.position.y as i16,
-        );
-        max.0 = std::cmp::max(
-            std::cmp::max(v0.position.x.ceil() as i16, v1.position.x.ceil() as i16),
-            v2.position.x.ceil() as i16,
-        );
-        max.1 = std::cmp::max(
-            std::cmp::max(v0.position.y.ceil() as i16, v1.position.y.ceil() as i16),
-            v2.position.y.ceil() as i16,
-        );
-
-        (min, max)
     }
 
     fn draw_pixel(&mut self, x: i16, y: i16, color: Color) {
@@ -238,4 +210,34 @@ impl Renderer {
             }
         }
     }
+}
+
+// TODO: document, test, move to utils module?
+fn edge_function(v0: &Point2<f32>, v1: &Point2<f32>, v2: &Point2<f32>) -> f32 {
+    -((v2.x - v0.x) * (v1.y - v0.y) - (v2.y - v0.y) * (v1.x - v0.x))
+}
+
+// TODO: document, test, move to utils module?
+fn bounding_box(v0: &Vertex, v1: &Vertex, v2: &Vertex) -> ((i16, i16), (i16, i16)) {
+    let mut min = (0, 0);
+    let mut max = (0, 0);
+
+    min.0 = std::cmp::min(
+        std::cmp::min(v0.position.x as i16, v1.position.x as i16),
+        v2.position.x as i16,
+    );
+    min.1 = std::cmp::min(
+        std::cmp::min(v0.position.y as i16, v1.position.y as i16),
+        v2.position.y as i16,
+    );
+    max.0 = std::cmp::max(
+        std::cmp::max(v0.position.x.ceil() as i16, v1.position.x.ceil() as i16),
+        v2.position.x.ceil() as i16,
+    );
+    max.1 = std::cmp::max(
+        std::cmp::max(v0.position.y.ceil() as i16, v1.position.y.ceil() as i16),
+        v2.position.y.ceil() as i16,
+    );
+
+    (min, max)
 }
