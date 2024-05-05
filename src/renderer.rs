@@ -121,7 +121,7 @@ impl Renderer {
 
         let light = Vector3::new(0.0, 0.0, -1.0);
 
-        for face in model.index_buffer() {
+        for face in &model.index_buffer {
             let mut v0 = model.vertex_at(face.indexes.0 - 1);
             let mut v1 = model.vertex_at(face.indexes.1 - 1);
             let mut v2 = model.vertex_at(face.indexes.2 - 1);

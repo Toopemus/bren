@@ -9,9 +9,9 @@ use nalgebra::{Isometry3, Point3, Translation3, UnitQuaternion};
 /// object.
 #[derive(Debug)]
 pub struct Model {
-    vertex_buffer: Vec<Vertex>,
-    index_buffer: Vec<Face>,
-    position: Translation3<f32>,
+    pub vertex_buffer: Vec<Vertex>,
+    pub index_buffer: Vec<Face>,
+    pub position: Translation3<f32>,
     pub rotation: UnitQuaternion<f32>,
 }
 
@@ -97,16 +97,6 @@ impl Model {
             position: Translation3::new(0.0, 0.0, 0.0),
             rotation: UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0),
         }
-    }
-
-    /// Getter for the model's vertex buffer.
-    pub fn vertex_buffer(&mut self) -> &mut Vec<Vertex> {
-        &mut self.vertex_buffer
-    }
-
-    /// Getter for the model's index buffer.
-    pub fn index_buffer(&self) -> &Vec<Face> {
-        &self.index_buffer
     }
 
     /// Returns the vertex at index.

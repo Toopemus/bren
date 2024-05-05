@@ -10,7 +10,7 @@ fn main() {
 
     let mut i = 0.0;
     loop {
-        for vertex in plane.vertex_buffer() {
+        for vertex in &mut plane.vertex_buffer {
             vertex.position.z = ((std::f32::consts::PI
                 * (vertex.position.x + (i / std::f32::consts::PI)))
                 .sin()
